@@ -14,8 +14,6 @@ write-host "WebDavadoo module version $($MyInvocation.MyCommand.Module.Version) 
 Write-Host "Use 'Get-Help <cmdlet-name> -Full' to see detailed help for each cmdlet."
 Write-Host "Use 'Get-Command -Module WebDavadoo' to see all available cmdlets."
 Write-Host ""
-Write-Host "Enter your WebDAV / Nextcloud credentials below"
-# Module-scoped credential storage
-# Module-scope variable for session credential
+Write-Host "Run Set-WebDavCredential to enter your WebDAV credentials."
+
 $script:WebDavCredential = $null
-$script:WebDavCredential = Set-WebDavCredential

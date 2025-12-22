@@ -1,7 +1,6 @@
 # WebDavadoo
 
-WebDavadoo (pronounced similarly to yabba-dabba-do) is a PowerShell module for working with WebDAV from the command line.  
-It is designed to feel like native filesystem cmdlets while supporting authentication, recursion, folders, files, quotas, and more.
+WebDavadoo (pronounced with the same prosodic pattern as 'yabba-dabba-doo') is a PowerShell module for working with WebDAV from the command line. It is designed to feel like native filesystem cmdlets while supporting authentication, recursion, folders, files, quotas, and more.
 
 Developed and tested primarily against **Nextcloud WebDAV**, but should work with other compliant WebDAV servers.
 
@@ -46,7 +45,7 @@ Import-Module ./WebDavadoo.psm1
 2. Go to Profile -> Security
 3. Create a new App Password
 4. Copy the generated username and password
-5. Use this when prompted by the module
+5. Use this when prompted by the module after running Set-WebDavCredential
 
 ## WebDavaDonts
 

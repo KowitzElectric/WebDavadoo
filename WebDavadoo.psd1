@@ -30,7 +30,7 @@
     Copyright         = '(c) Kowitz Electric. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description       = 'Nextcloud WebDAV PowerShell utilities'
+    Description       = 'WebDAV PowerShell utilities'
 
     # Minimum version of the PowerShell engine required by this module
     # PowerShellVersion = ''
@@ -114,7 +114,7 @@
             # LicenseUri = ''
 
             # A URL to the main website for this project.
-            # ProjectUri = ''
+            ProjectUri = 'https://github.com/KowitzElectric/WebDavadoo'
 
             # A URL to an icon representing this module.
             # IconUri = ''
