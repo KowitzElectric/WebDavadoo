@@ -36,13 +36,16 @@ function Receive-WebDavItem {
             throw "No WebDAV credential found. Run Set-WebDavCredential first."
         }
 
+        . "$script:PSScriptRootPrivate\downloadWebDavItem.ps1"
+        . "$script:PSScriptRootPrivate\walkWebDavTree.ps1"
+
         # Ensure local root exists
         if (-not (Test-Path $LocalPath)) {
             Write-Verbose "Creating local directory: $LocalPath"
             New-Item -ItemType Directory -Path $LocalPath | Out-Null
         }
 
-
+        <#
         function DownloadWebDavItem {
             param(
                 [string]$ItemUrl,
@@ -110,10 +113,11 @@ function Receive-WebDavItem {
                 } # else {
             } # foreach ($item in $items) {
         } # function WalkWebDavTree {
+        #>
     } # begin {
 
     process {
-        WalkWebDavTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath
+        WalkWebDavTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recursive:$Recursive -CloudCredential $CloudCredential
     }
 
     end {
