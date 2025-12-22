@@ -1,0 +1,7 @@
+# WebDavadoo
+
+## A powershell solution for working with WebDav in the command line. Developed against Nextcloud's webdav implementation
+
+### NextCloud Install
+
+- Create an application with an app password by logging into your nextcloud instance and going to your profile -> security
