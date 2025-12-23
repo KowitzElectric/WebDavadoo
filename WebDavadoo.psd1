@@ -70,18 +70,19 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport = @(
-        "Get-WebDavItem",
+        "Copy-WebDavItem",
+        "Get-WebDavChildItem",
+        "Get-WebDavItemProperty"
+        "Get-WebDavQuota",
+        "Measure-WebDavItem",
         "Move-WebDavItem",
         "New-WebDavDirectory",
-        "Remove-WebDavItem",
-        "Send-ToWebDav",
         "Receive-WebDavItem",
-        "Copy-WebDavItem",
-        "Measure-WebDavItem",
-        "Get-WebDavQuota",
-        "Test-WebDavItem",
+        "Remove-WebDavCredential",
+        "Remove-WebDavItem",
+        "Send-ItemToWebDav",
         "Set-WebDavCredential",
-        "Clear-WebDavCredential"
+        "Test-WebDavItem"        
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

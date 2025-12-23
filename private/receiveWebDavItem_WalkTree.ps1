@@ -15,7 +15,7 @@
     The credential used to authenticate with the WebDAV server.
 
 #>
-function WalkWebDavTree {
+function ReceiveWebDavItem_WalkTree {
     param(
         [string]$CurrentUrl,
         [string]$CurrentLocalPath,
@@ -40,17 +40,17 @@ function WalkWebDavTree {
         if ($isDir) {
             $dirUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name + '/')
             Write-Verbose "Entering directory: $dirUrl"                
-            DownloadWebDavItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
+            ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
             if ($Recursive) {
                 Write-Verbose "Recursing into directory: $dirUrl"
-                WalkWebDavTree -CurrentUrl $dirUrl -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
+                ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
             } # if ($Recursive) {
         }
         else {
             Write-Verbose "Downloading file: $CurrentUrl"
             Write-Verbose "To local path: $localTarget"
             Write-Verbose "IsDirectory: $false"
-            DownloadWebDavItem -ItemUrl $CurrentUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential
+            ReceiveWebDavItem_DownloadItem -ItemUrl $CurrentUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential
         } # else {
     } # foreach ($item in $items) {
-} # function WalkWebDavTree {
+} # function ReceiveWebDavItem_WalkTree {

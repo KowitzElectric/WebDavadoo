@@ -18,6 +18,16 @@ Developed and tested primarily against **Nextcloud WebDAV**, but should work wit
 - Retrieve storage quota information
 - Designed to behave similar to PowerShell filesystem cmdlets
 
+## Goals
+
+WebDavadoo is built with a few simple goals:
+
+1. Be useful to real admins- Practical tools, not toys
+2. Be script-friendly- Works in automation as well as interactively
+3. Be predictable- Functions behave like familiar PowerShell cmdlets
+4. Be transparent- Verbose logging where helpful
+5. Respect user control- You choose when to recurse, overwrite, etc.
+
 ---
 
 ## Requirements
@@ -47,6 +57,43 @@ Import-Module ./WebDavadoo.psm1
 4. Copy the generated username and password
 5. Use this when prompted by the module after running Set-WebDavCredential
 
+---
+
+## Credential Setup
+
+You can store your credentials in memory for your sesions so you only enter them once: Set-WebDavCredential.
+
+You'll be prompted for your username and app password. They are stored for the duration of the Powershell session.
+
+---
+
+## Common Usage
+
+Browse remote directory contents:  
+Get-WebDavChildItem -WebDavUrl "https://cloud.example.com/remote.php/dav/files/user/"
+
+Download a file:
+Receive-WebDavItem -WebDavUrl "https://cloud.example.com/.../Folder1" -LocalPath "C:\Temp"
+
+Upload a file:
+Send-ToWebDav -LocalPath "/home/jgalt/Documents/Lexico-ProsodicConvergenceandAcousticIdentity.docx" -WebDavUrl "https://cloud.example.com/.../Docs"
+
+Move a file:
+Move-WebDavItem -WebDavUrlOfFile https://cloud.example.com/remote.php/dav/files/jgalt/newfile.md -DestinationWebDavUrlOfFile https://files.thekozanos.com/remote.php/dav/files/jgalt/TextFile5.md
+
+---
+
+## Contributions
+
+- Open issues for bugs, questions, or feature requests
+- Submit PRs with improvements
+- Share ideas on workflows that make WebDAV easier in PowerShell
+- Please try to follow PowerShell style best practices where possible
+
 ## WebDavaDonts
 
-- Do not use Powershell 5. Several of the commands in the module are not available in Powershell 5.
+- Do not use any version of Powershell below 7. Several of the commands in the module are not available until Powershell 7.
+- Do not treat WebDAV paths like normal file system paths. WebDAV URLs behave differently than local paths. Case sensitivity, trailing slashes, and encoding matter.
+- Do not store your credentials in scripts or repos Use Set-WebDavCredential interactively or secure vault solutions. Plain-text credentials are bad. Very bad.
+- Do not forget to check your quota first. Upload failures often come from quota exhaustion. Run Get-WebDavQuota before massive syncs.
+- Do not rely on this module as a backup strategy (yet). It’s a convenience tool, not a validated disaster-recovery platform. Verify your data integrity independently.

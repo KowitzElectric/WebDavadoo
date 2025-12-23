@@ -13,7 +13,7 @@
 .PARAMETER CloudCredential
     The credential used to authenticate with the WebDAV server.
 #>
-function DownloadWebDavItem {
+function ReceiveWebDavItem_DownloadItem {
     param(
         [string]$ItemUrl,
         [string]$TargetPath,
@@ -42,4 +42,4 @@ function DownloadWebDavItem {
             Write-Error "Failed to download file: $_"
         }
     }
-}
+} # function ReceiveWebDavItem_DownloadItem {

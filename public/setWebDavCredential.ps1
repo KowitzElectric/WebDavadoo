@@ -32,5 +32,5 @@ function Set-WebDavCredential {
         return
     }
     $script:WebDavCredential = $Credential
-    return $script:WebDavCredential
+    #return $script:WebDavCredential
 } # function Set-WebDavCredential
