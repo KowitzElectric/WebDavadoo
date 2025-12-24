@@ -90,6 +90,14 @@ Move-WebDavItem -WebDavUrlOfFile https://cloud.example.com/remote.php/dav/files/
 - Share ideas on workflows that make WebDAV easier in PowerShell
 - Please try to follow PowerShell style best practices where possible
 
+---
+
+## License
+
+[LICENSE](https://github.com/KowitzElectric/WebDavadoo/blob/main/LICENSE)
+
+---
+
 ## WebDavaDonts
 
 - Do not use any version of Powershell below 7. Several of the commands in the module are not available until Powershell 7.
