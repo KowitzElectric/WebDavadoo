@@ -16,6 +16,7 @@
 function Get-WebDavQuota {
     param(
         [Parameter(Mandatory)][string]$WebDavUrl,
+        [Parameter(Mandatory = $false, Position = 1)][switch]$skipCertificateCheck,
         [Parameter()][System.Management.Automation.PSCredential]$CloudCredential = $script:WebDavCredential
     )
     begin {
@@ -23,7 +24,14 @@ function Get-WebDavQuota {
     }
     
     process {
-        $resp = Invoke-WebRequest -Uri $WebDavUrl -CustomMethod PROPFIND -Headers @{ Depth = "0" } -Authentication Basic -Credential $CloudCredential
+
+        if ($skipCertificateCheck) {
+            $resp = Invoke-WebRequest -Uri $WebDavUrl -CustomMethod PROPFIND -Headers @{ Depth = "0" } -Authentication Basic -Credential $CloudCredential -SkipCertificateCheck
+        }
+        else {
+            $resp = Invoke-WebRequest -Uri $WebDavUrl -CustomMethod PROPFIND -Headers @{ Depth = "0" } -Authentication Basic -Credential $CloudCredential
+        }
+        
         [xml]$xml = $resp.Content
         $prop = $xml.multistatus.response.propstat.prop
 

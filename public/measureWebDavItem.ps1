@@ -7,6 +7,11 @@ function Measure-WebDavItem {
         [Parameter()]
         [switch]$Recurse,
 
+        # Parameter help description
+        [Parameter()]
+        [switch]
+        $SkipCertificateCheck, 
+
         [Parameter()]
         [System.Management.Automation.PSCredential]
         $CloudCredential = $script:WebDavCredential
@@ -59,11 +64,23 @@ function Measure-WebDavItem {
     process {
         if ($Recurse) {
             Write-Verbose "Measuring WebDAV item at '$WebDavUrl' recursively."
-            MeasureWebDavItem_WalkTree -Url $WebDavUrl -Recurse:$true
+            if ($SkipCertificateCheck) {
+                Write-Verbose "Skipping certificate check for recursive WebDAV measurement."
+                MeasureWebDavItem_WalkTree -Url $WebDavUrl -Recurse:$true -SkipCertificateCheck
+            }
+            else {
+                MeasureWebDavItem_WalkTree -Url $WebDavUrl -Recurse:$true
+            }
         }
         else {
             Write-Verbose "Measuring WebDAV item at '$WebDavUrl' (non-recursive)."
-            MeasureWebDavItem_WalkTree -Url $WebDavUrl
+            if ($SkipCertificateCheck) {
+                Write-Verbose "Skipping certificate check for WebDAV measurement."
+                MeasureWebDavItem_WalkTree -Url $WebDavUrl -SkipCertificateCheck
+            }
+            else {
+                MeasureWebDavItem_WalkTree -Url $WebDavUrl
+            }
         }
         
     } # process

@@ -28,6 +28,8 @@ function Move-WebDavItem {
         [string]
         $DestinationWebDavUrlOfFile,
 
+        [Parameter(Mandatory = $false, Position = 2)][switch]$skipCertificateCheck,
+
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
@@ -45,17 +47,33 @@ function Move-WebDavItem {
     } # begin {
 
     process {
-        try {
-            $response = Invoke-WebRequest `
-                -Uri $WebDavUrlOfFile `
-                -CustomMethod MOVE `
-                -Headers @{ Destination = $DestinationWebDavUrlOfFile } `
-                -Authentication Basic `
-                -Credential $cloudCredential
-        } # try {
-        catch {
-            Write-Error "Failed to move item: $_"
-        } # catch {
+        if ($skipCertificateCheck) {
+            try {
+                $response = Invoke-WebRequest `
+                    -Uri $WebDavUrlOfFile `
+                    -CustomMethod MOVE `
+                    -Headers @{ Destination = $DestinationWebDavUrlOfFile } `
+                    -Authentication Basic `
+                    -Credential $cloudCredential `
+                    -SkipCertificateCheck
+            } # try {
+            catch {
+                Write-Error "Failed to move item: $_"
+            } # catch {
+        } # if ($skipCertificateCheck) {
+        else {
+            try {
+                $response = Invoke-WebRequest `
+                    -Uri $WebDavUrlOfFile `
+                    -CustomMethod MOVE `
+                    -Headers @{ Destination = $DestinationWebDavUrlOfFile } `
+                    -Authentication Basic `
+                    -Credential $cloudCredential
+            } # try {
+            catch {
+                Write-Error "Failed to move item: $_"
+            } # catch {
+        } # else {
         
     }
     

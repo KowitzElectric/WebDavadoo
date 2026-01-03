@@ -18,6 +18,7 @@ function ReceiveWebDavItem_DownloadItem {
         [string]$ItemUrl,
         [string]$TargetPath,
         [bool]$IsDirectory,
+        [switch]$SkipCertificateCheck = $false,
         [System.Management.Automation.PSCredential]$CloudCredential
     )
 
@@ -29,17 +30,33 @@ function ReceiveWebDavItem_DownloadItem {
     }
     else {
         Write-Verbose "Downloading $ItemUrl -> $TargetPath"
-
-        try {
-            Invoke-WebRequest `
-                -Uri $ItemUrl `
-                -OutFile $TargetPath `
-                -Authentication Basic `
-                -Credential $CloudCredential `
-                -ErrorAction Stop
+        if ($SkipCertificateCheck) {
+            try {
+                Invoke-WebRequest `
+                    -Uri $ItemUrl `
+                    -OutFile $TargetPath `
+                    -Authentication Basic `
+                    -Credential $CloudCredential `
+                    -SkipCertificateCheck `
+                    -ErrorAction Stop
+            }
+            catch {
+                Write-Error "Failed to download file: $_"
+            }
+            return
         }
-        catch {
-            Write-Error "Failed to download file: $_"
+        else {
+            try {
+                Invoke-WebRequest `
+                    -Uri $ItemUrl `
+                    -OutFile $TargetPath `
+                    -Authentication Basic `
+                    -Credential $CloudCredential `
+                    -ErrorAction Stop
+            }
+            catch {
+                Write-Error "Failed to download file: $_"
+            }
         }
     }
 } # function ReceiveWebDavItem_DownloadItem {

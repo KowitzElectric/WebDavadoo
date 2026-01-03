@@ -27,6 +27,9 @@ function Receive-WebDavItem {
         [bool]$Recursive = $false,
 
         [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck = $false,
+
+        [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential]
         $CloudCredential = $script:WebDavCredential
     )
@@ -48,7 +51,14 @@ function Receive-WebDavItem {
     } # begin {
 
     process {
-        ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recursive:$Recursive -CloudCredential $CloudCredential
+        if ($SkipCertificateCheck) {
+            Write-Verbose "Skipping certificate check. Receiving WebDAV items from $WebDavUrl to $LocalPath"
+            ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recursive:$Recursive -CloudCredential $CloudCredential -SkipCertificateCheck
+        }
+        else {
+            Write-Verbose "Receiving WebDAV items from $WebDavUrl to $LocalPath"
+            ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recursive:$Recursive -CloudCredential $CloudCredential
+        }
     }
 
     end {

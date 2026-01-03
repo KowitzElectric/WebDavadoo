@@ -12,6 +12,9 @@
 .EXAMPLE
     Get-WebDavChildItem -WebDavUrl "https://example.com/webdav/" -Path "MyFolder" -CloudCredential (Get-Credential)
     This example retrieves the child items of the directory "MyFolder" on the cloud file server with the WebDAV URL "https://example.com/webdav/" using the provided credentials.
+.EXAMPLE
+@([pscustomobject]@{'WebDavUrl' = 'https://example.com/webdav';}) | Get-WebDavChildItem -skipCertificateCheck
+
 #>
 function Get-WebDavChildItem {
     [CmdletBinding()]
@@ -31,10 +34,12 @@ function Get-WebDavChildItem {
         )]
         [string[]]$Path = ".",
 
+        [Parameter(Mandatory = $false, Position = 2)][switch]$skipCertificateCheck,
+
         # Use this to log into the cloud server webdav.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
-            Position = 2)]
+            Position = 3)]
         #[securestring]
         [System.Management.Automation.PSCredential]$CloudCredential = $script:WebDavCredential
         
@@ -55,12 +60,25 @@ function Get-WebDavChildItem {
     }
     
     process {
-        $response = Invoke-WebRequest `
-            -Uri $webDavUrl `
-            -CustomMethod PROPFIND `
-            -Headers @{ Depth = "1" } `
-            -Authentication Basic `
-            -Credential $cloudCredential
+        if ($skipCertificateCheck) {
+            Write-Verbose "Skipping certificate check for WebDAV request to '$webDavUrl'."
+            $response = Invoke-WebRequest `
+                -Uri $webDavUrl `
+                -CustomMethod PROPFIND `
+                -Headers @{ Depth = "1" } `
+                -Authentication Basic `
+                -Credential $cloudCredential `
+                -SkipCertificateCheck
+        }
+        else {
+            Write-Verbose "Performing WebDAV request to '$webDavUrl'."
+            $response = Invoke-WebRequest `
+                -Uri $webDavUrl `
+                -CustomMethod PROPFIND `
+                -Headers @{ Depth = "1" } `
+                -Authentication Basic `
+                -Credential $cloudCredential
+        }
 
         [xml]$xml = $response.Content
 

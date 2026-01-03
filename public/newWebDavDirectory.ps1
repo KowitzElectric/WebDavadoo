@@ -43,10 +43,16 @@ function New-WebDavDirectory {
         [string]
         $newDirectoryName,
 
-        # Use this to log into the cloud server webdav.
+        # Set if you'd like to skip the ssl certificate check.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
+        [switch]$skipCertificateCheck,
+
+        # Use this to log into the cloud server webdav.
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
         #[securestring]
         [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
         
@@ -67,13 +73,22 @@ function New-WebDavDirectory {
     }
     
     process {
-        try {
-            Invoke-RestMethod -Uri $fullUriPath -CustomMethod MKCOL -Credential $cloudCredential
-        } # try {
-        catch {
-            Write-Error "Failed to create directory: $_"
-        } # catch {
-        
+        if ($skipCertificateCheck) {
+            try {
+                Invoke-RestMethod -Uri $fullUriPath -CustomMethod MKCOL -Credential $cloudCredential -SkipCertificateCheck
+            } # try {
+            catch {
+                Write-Error "Failed to create directory: $_"
+            } # catch {
+        }
+        else {
+            try {
+                Invoke-RestMethod -Uri $fullUriPath -CustomMethod MKCOL -Credential $cloudCredential
+            } # try {
+            catch {
+                Write-Error "Failed to create directory: $_"
+            } # catch {
+        } # else
     }
     
     end {

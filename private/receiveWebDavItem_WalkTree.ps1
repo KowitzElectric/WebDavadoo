@@ -20,11 +20,17 @@ function ReceiveWebDavItem_WalkTree {
         [string]$CurrentUrl,
         [string]$CurrentLocalPath,
         [bool]$Recursive,
+        [switch]$SkipCertificateCheck = $false,
         [System.Management.Automation.PSCredential]$CloudCredential
     )
 
-            
-    $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl
+    if ($SkipCertificateCheck) {
+        $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl -SkipCertificateCheck
+    }
+    else {
+        $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl
+    }
+    
     foreach ($item in $items) {
 
         # If an empty folder, then usually the first entry is the folder itself. Skip it.
@@ -39,18 +45,40 @@ function ReceiveWebDavItem_WalkTree {
                 
         if ($isDir) {
             $dirUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name + '/')
-            Write-Verbose "Entering directory: $dirUrl"                
-            ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
+            Write-Verbose "Entering directory: $dirUrl" 
+            if ($SkipCertificateCheck) {
+                Write-Verbose "Skipping certificate check for directory creation: $localTarget"
+                ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential -SkipCertificateCheck
+            }
+            else {
+                ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
+            }
+            
             if ($Recursive) {
                 Write-Verbose "Recursing into directory: $dirUrl"
-                ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
+                if ($SkipCertificateCheck) {
+                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -CurrentLocalPath $localTarget -CloudCredential $CloudCredential -SkipCertificateCheck
+                }
+                else {
+                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
+                }
             } # if ($Recursive) {
         }
         else {
             Write-Verbose "Downloading file: $CurrentUrl"
             Write-Verbose "To local path: $localTarget"
             Write-Verbose "IsDirectory: $false"
-            ReceiveWebDavItem_DownloadItem -ItemUrl $CurrentUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential
+            $fileUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name)
+            if ($SkipCertificateCheck) {
+                Write-Verbose "Skipping certificate check for file download: $localTarget"
+                ReceiveWebDavItem_DownloadItem -ItemUrl $fileUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential -SkipCertificateCheck
+            
+            }
+            else {
+                ReceiveWebDavItem_DownloadItem -ItemUrl $fileUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential
+            
+            }
+            
         } # else {
     } # foreach ($item in $items) {
 } # function ReceiveWebDavItem_WalkTree {

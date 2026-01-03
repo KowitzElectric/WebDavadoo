@@ -36,7 +36,8 @@ function Copy-WebDavItem {
         [ValidateSet("T", "F")]
         [string]
         $Overwrite = "F",
-
+        [Parameter(Mandatory = $false, 
+            Position = 1)][switch]$skipCertificateCheck,
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
@@ -54,23 +55,42 @@ function Copy-WebDavItem {
     } # begin {
 
     process {
-        try {
-            # invoke-webrequest to copy the file.  skip http error check to always get the data in $response
-            $response = Invoke-WebRequest `
-                -Uri $WebDavUrlOfFile `
-                -CustomMethod COPY `
-                -Headers @{ Destination = $DestinationWebDavUrlOfFile 
-                "Overwrite"             = $Overwrite
-            } `
-                -Authentication Basic `
-                -Credential $cloudCredential `
-                -SkipHttpErrorCheck
-        } # try {
-        catch {
-            Write-Error "Failed to copy item: $_"
-            return $null
-        } # catch {
-
+        if ($skipCertificateCheck) {
+            try {
+                # invoke-webrequest to copy the file.  skip http error check to always get the data in $response
+                $response = Invoke-WebRequest `
+                    -Uri $WebDavUrlOfFile `
+                    -CustomMethod COPY `
+                    -Headers @{ Destination = $DestinationWebDavUrlOfFile 
+                    "Overwrite"             = $Overwrite
+                } `
+                    -Authentication Basic `
+                    -Credential $cloudCredential `
+                    -SkipCertificateCheck
+            } # try {
+            catch {
+                Write-Error "Failed to copy item: $_"
+                return $null
+            } # catch {
+        } # if ($skipCertificateCheck) {
+        else {
+            try {
+                # invoke-webrequest to copy the file.  skip http error check to always get the data in $response
+                $response = Invoke-WebRequest `
+                    -Uri $WebDavUrlOfFile `
+                    -CustomMethod COPY `
+                    -Headers @{ Destination = $DestinationWebDavUrlOfFile 
+                    "Overwrite"             = $Overwrite
+                } `
+                    -Authentication Basic `
+                    -Credential $cloudCredential `
+            
+            } # try {
+            catch {
+                Write-Error "Failed to copy item: $_"
+                return $null
+            } # catch {
+        }
         $statusCode = $response.StatusCode
         $statusDescription = $response.StatusDescription
         
