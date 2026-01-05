@@ -24,8 +24,13 @@ function Remove-WebDavItem {
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
-            Position = 3)]
-        #[securestring]
+            Position = 1)]
+        [switch]
+        $SkipCertificateCheck = $false,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
         [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
         
     )
@@ -39,18 +44,28 @@ function Remove-WebDavItem {
     } # begin {
 
     process {
-        try {
+        if ($SkipCertificateCheck) {
             $response = Invoke-WebRequest `
                 -Uri $WebDavUrlOfFile `
                 -CustomMethod DELETE `
                 -Authentication Basic `
+                -SkipCertificateCheck `
                 -Credential $cloudCredential
-        } # try {
-        catch {
-            Write-Error "Failed to remove item: $_"
-        } # catch {
-        
-    }
+
+        } # if ($SkipCertificateCheck) {
+        else {
+            try {
+                $response = Invoke-WebRequest `
+                    -Uri $WebDavUrlOfFile `
+                    -CustomMethod DELETE `
+                    -Authentication Basic `
+                    -Credential $cloudCredential
+            } # try {
+            catch {
+                Write-Error "Failed to remove item: $_"
+            } # catch {        
+        } # else {    
+    } # process {
     
     end {
         if ($PSCmdlet.MyInvocation.BoundParameters.Verbose) {

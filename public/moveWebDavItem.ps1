@@ -12,6 +12,12 @@
 .EXAMPLE
     Move-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFile.txt" -DestinationWebDavUrlOfFile "https://example.com/webdav/MyFolder" -CloudCredential (Get-Credential)
     This will move the file 'MyFile.txt' to the directory 'MyFolder' on the cloud file server.
+.EXAMPLE
+    Move-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFile.txt" -DestinationWebDavUrlOfFile "https://example.com/webdav/MyFolder/MyRenamedFile.txt" -CloudCredential (Get-Credential)
+    This will move the file 'MyFile.txt' to the directory 'MyFolder' on the cloud file server and rename it to 'MyRenamedFile.txt'.
+.EXAMPLE
+    Move-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFile.txt" -DestinationWebDavUrlOfFile "https://example.com/webdav/webdav/MyRenamedFile.txt" -skipCertificateCheck -CloudCredential (Get-Credential)
+    This will rename the file 'MyFile.txt' to 'MyRenamedFile.txt', skipping SSL/TLS certificate validation.
 #>
 function Move-WebDavItem {
     [CmdletBinding()]
@@ -28,13 +34,17 @@ function Move-WebDavItem {
         [string]
         $DestinationWebDavUrlOfFile,
 
-        [Parameter(Mandatory = $false, Position = 2)][switch]$skipCertificateCheck,
+        [Parameter(Mandatory = $false, 
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
+        [switch]
+        $skipCertificateCheck,
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
-            Position = 3)]
-        #[securestring]
-        [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
+            Position = 4)]
+        [System.Management.Automation.PSCredential]
+        $cloudCredential = $script:WebDavCredential
         
     )
     

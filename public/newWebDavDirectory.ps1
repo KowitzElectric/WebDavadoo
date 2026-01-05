@@ -9,6 +9,8 @@
     The directory on the cloud file server to create the new directory in.  If no directory is specified it will create the new directory in the root of the cloud file server.
 .PARAMETER newDirectoryName
     The name of the new directory you want to create.
+.PARAMETER skipCertificateCheck
+    Switch to skip SSL/TLS certificate validation. This is just for testing purposes and not recommended
 .PARAMETER cloudCredential
     Use this to log into the cloud server webdav.
 .EXAMPLE
@@ -22,38 +24,32 @@
 function New-WebDavDirectory {
     [CmdletBinding()]
     param (
-        # The webdav url you can get from the settings of the cloud file server.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 0)]
         [string]
         $webDavUrl,
     
-        # The directory on the cloud file server to create the new directory in.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 1)]
         [string]
         $directory,
 
-        # The name of the new directory you want to create.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 2)]
         [string]
         $newDirectoryName,
 
-        # Set if you'd like to skip the ssl certificate check.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
         [switch]$skipCertificateCheck,
 
-        # Use this to log into the cloud server webdav.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 4)]
-        #[securestring]
         [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
         
     )

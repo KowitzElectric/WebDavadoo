@@ -33,7 +33,7 @@ WebDavadoo is built with a few simple goals:
 ## Requirements
 
 - PowerShell 7 or later
-- WebDAV enabled on your cloud provider (Nextcloud is what WebDavadoo was tested against)
+- WebDAV enabled on your website (Nextcloud and IIS are what WebDavadoo was tested against)
 
 ---
 
@@ -49,13 +49,17 @@ Import-Module ./WebDavadoo.psm1
 
 ---
 
-## Nextcloud Setup
+## Web server setup
+
+### Nextcloud Setup
 
 1. Login to your Nextcloud instance
 2. Go to Profile -> Security
 3. Create a new App Password
 4. Copy the generated username and password
 5. Use this when prompted by the module after running Set-WebDavCredential
+
+### IIS Setup
 
 ---
 

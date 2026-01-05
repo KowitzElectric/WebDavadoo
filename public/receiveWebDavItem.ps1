@@ -17,21 +17,32 @@
 function Receive-WebDavItem {
     [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Mandatory)]
-        [string]$WebDavUrl,
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        [string]
+        $WebDavUrlOfFile,
 
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1)]
         [string]$LocalPath,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
         [bool]$Recursive = $false,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 3)]
         [switch]$SkipCertificateCheck = $false,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
         [System.Management.Automation.PSCredential]
-        $CloudCredential = $script:WebDavCredential
+        $cloudCredential = $script:WebDavCredential
     )
 
     begin {
@@ -51,6 +62,38 @@ function Receive-WebDavItem {
     } # begin {
 
     process {
+        # If the URL does not end in /
+        # assume it's a file and download directly
+        if (-not $WebDavUrl.TrimEnd().EndsWith('/')) {
+
+            $fileName = Split-Path $WebDavUrl -Leaf
+            $target = Join-Path $LocalPath $fileName
+
+            if ($SkipCertificateCheck) {
+                Write-Verbose "Skipping certificate check. Downloading file $WebDavUrl to $target"
+                ReceiveWebDavItem_DownloadItem `
+                    -ItemUrl $WebDavUrl `
+                    -TargetPath $target `
+                    -IsDirectory $false `
+                    -CloudCredential $CloudCredential `
+                    -SkipCertificateCheck:$SkipCertificateCheck
+
+                return
+            }
+            else {
+                Write-Verbose "Downloading file $WebDavUrl to $target"
+                ReceiveWebDavItem_DownloadItem `
+                    -ItemUrl $WebDavUrl `
+                    -TargetPath $target `
+                    -IsDirectory $false `
+                    -CloudCredential $CloudCredential `
+
+                return
+
+            } # else {
+        } # if (-not $WebDavUrl.TrimEnd().EndsWith('/')) {
+
+        # Otherwise, walk the tree
         if ($SkipCertificateCheck) {
             Write-Verbose "Skipping certificate check. Receiving WebDAV items from $WebDavUrl to $LocalPath"
             ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recursive:$Recursive -CloudCredential $CloudCredential -SkipCertificateCheck

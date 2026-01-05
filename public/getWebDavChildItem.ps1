@@ -7,6 +7,8 @@
     The WebDAV URL of the cloud file server.
 .PARAMETER Path
     The directory on the cloud file server to retrieve the child items from.
+.PARAMETER SkipCertificateCheck
+    Switch to skip SSL/TLS certificate validation. This is just for testing purposes and not recommended for production use.
 .PARAMETER CloudCredential
     The credentials to authenticate with the cloud file server.
 .EXAMPLE
@@ -19,29 +21,31 @@
 function Get-WebDavChildItem {
     [CmdletBinding()]
     param (
-        # The webdav url you can get from the settings of the cloud file server.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 0)]
         [string]
         $WebDavUrl,
     
-        # The directory on the cloud file server to create the new directory in.
         [Parameter(
             Position = 1,
             ValueFromPipeline,
             ValueFromPipelineByPropertyName
         )]
-        [string[]]$Path = ".",
+        [string[]]
+        $Path = ".",
 
-        [Parameter(Mandatory = $false, Position = 2)][switch]$skipCertificateCheck,
+        [Parameter(Mandatory = $false, 
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
+        [switch]
+        $skipCertificateCheck,
 
-        # Use this to log into the cloud server webdav.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
-        #[securestring]
-        [System.Management.Automation.PSCredential]$CloudCredential = $script:WebDavCredential
+        [System.Management.Automation.PSCredential]
+        $CloudCredential = $script:WebDavCredential
         
     )
     

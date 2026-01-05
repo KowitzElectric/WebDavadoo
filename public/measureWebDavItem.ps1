@@ -1,26 +1,54 @@
+<#
+.SYNOPSIS
+    Measure the size and count of files and directories at a WebDAV URL.
+.DESCRIPTION
+    Measure the size and count of files and directories at a WebDAV URL.
+.PARAMETER WebDavUrlOfFile
+    The webdav url down to the file or directory that you want to measure. This should be the full path to the file or directory.
+.PARAMETER Recurse
+    Switch to indicate whether to measure recursively through subdirectories.
+.PARAMETER SkipCertificateCheck
+    Switch to skip SSL/TLS certificate validation. This is just for testing purposes and not recommended for production use.
+.PARAMETER CloudCredential
+    Use this to log into the cloud server webdav.
+.EXAMPLE
+    Measure-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFolder" -Recurse
+    This will measure the size and count of files and directories in 'MyFolder' and all its subdirectories on the cloud file server.
+.EXAMPLE
+    Measure-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFolder/MyFile.txt" -skipCertificateCheck
+    This will measure the size of the file 'MyFile.txt' on the cloud file server, skipping certificate validation.
+#>
 function Measure-WebDavItem {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)]
-        [string]$WebDavUrl,
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        [string]
+        $WebDavUrlOfFile,
 
-        [Parameter()]
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1)]
         [switch]$Recurse,
 
-        # Parameter help description
-        [Parameter()]
+        [Parameter(Mandatory = $false, 
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
         [switch]
-        $SkipCertificateCheck, 
+        $skipCertificateCheck, 
 
-        [Parameter()]
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 3)]
         [System.Management.Automation.PSCredential]
-        $CloudCredential = $script:WebDavCredential
+        $cloudCredential = $script:WebDavCredential
     )
 
     begin {
         if (-not $CloudCredential) {
             throw "No WebDAV credential found. Run Set-WebDavCredential first."
-        }
+        } # if (-not $CloudCredential) {
 
         . "$script:PSScriptRootPrivate\measureWebDavItem_WalkTree.ps1"
 
@@ -29,37 +57,8 @@ function Measure-WebDavItem {
             FileCount      = 0
             DirectoryCount = 0
             TotalBytes     = [int64]0
-        }
-
-        <# function Walk-WebDav {
-            param(
-                [string]$Url
-            )
-
-            $items = Get-WebDavChildItem -WebDavUrl $Url -CloudCredential $CloudCredential
-
-            foreach ($item in $items) {
-
-                # Skip the self-reference entry if present
-                if ($item.HREF -eq (New-Object System.Uri($Url)).AbsolutePath) {
-                    continue
-                } # if ($item.HREF -eq (New-Object System.Uri($Url)).AbsolutePath)
-
-                if ($item.Type -eq "Directory") {
-                    $stats.DirectoryCount++
-
-                    if ($Recurse) {
-                        $dirUrl = ($Url.TrimEnd('/') + '/' + $item.Name.TrimEnd('/') + '/')
-                        Walk-WebDav -Url $dirUrl
-                    } # if recurse
-                } # if ($item.Type -eq "Directory")
-                else {
-                    $stats.FileCount++
-                    $stats.TotalBytes += [int64]$item.Length
-                } # else
-            } # foreach ($item in $items)
-        } # function Walk-WebDav { #>
-    }
+        } # $stats = [pscustomobject]@{ ...
+    } # begin {
 
     process {
         if ($Recurse) {

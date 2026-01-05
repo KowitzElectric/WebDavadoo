@@ -48,10 +48,17 @@ function Send-ItemToWedDav {
         [string]
         $inputFilePath,
 
-        # Use this to log into the cloud server webdav.
+        # Skip certificate check.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
+        [switch]
+        $skipCertificateCheck,
+
+        # Use this to log into the cloud server webdav.
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
         #[securestring]
         [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
     )
@@ -69,8 +76,25 @@ function Send-ItemToWedDav {
         Write-Verbose "URI: $uri"
     }
     Process {
-        $response = Invoke-WebRequest -uri $uri -Method Put -Infile $inputFilePath -Credential $cloudCredential
+        if ($skipCertificateCheck) {
+            Write-Verbose "Skipping certificate check."
+            try {
+                $response = Invoke-WebRequest -uri $uri -Method Put -Infile $inputFilePath -Credential $cloudCredential -SkipCertificateCheck
+            }
+            catch {
+                Write-Error "Failed to upload file: $_"
+            }
+        }
+        else {
+            try {
+                $response = Invoke-WebRequest -uri $uri -Method Put -Infile $inputFilePath -Credential $cloudCredential
+            }
+            catch {
+                Write-Error "Failed to upload file: $_"
+            }
+        }
         $statusCode = $response.statusCode
+        
     } # Process
     End {
         if ($statusCode -eq '201') {

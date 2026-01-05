@@ -9,11 +9,16 @@
     The webdav url destination for the source file. This should be the full path to the destination file and include the file name and extension.
 .PARAMETER Overwrite
     This is a boolean value that determines whether to overwrite the file if it already exists at the destination.  Use "T" for true and "F" for false.
+.PARAMETER SkipCertificateCheck
+    Switch to skip SSL/TLS certificate validation. This is just for testing purposes and not recommended for production use.
 .PARAMETER CloudCredential
     Use this to log into the cloud server webdav.
 .EXAMPLE
-    Copy-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFile.txt" -DestinationWebDavUrlOfFile "https://example.com/webdav/MyFolder" -CloudCredential (Get-Credential)
+    Copy-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFile.txt" -DestinationWebDavUrlOfFile "https://example.com/webdav/MyFolder" 
     This will copy the file 'MyFile.txt' to the directory 'MyFolder' on the cloud file server.
+.EXAMPLE
+    Copy-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFile.txt" -DestinationWebDavUrlOfFile "https://example.com/webdav/MyFolder/MyRenamedFile.txt" -Overwrite "T" -skipCertificateCheck
+    This will copy the file 'MyFile.txt' to the directory 'MyFolder' on the cloud file server and rename it to 'MyRenamedFile.txt'. If 'MyRenamedFile.txt' already exists, it will be overwritten.
 #>
 function Copy-WebDavItem {
     [CmdletBinding()]
@@ -36,13 +41,18 @@ function Copy-WebDavItem {
         [ValidateSet("T", "F")]
         [string]
         $Overwrite = "F",
+        
         [Parameter(Mandatory = $false, 
-            Position = 1)][switch]$skipCertificateCheck,
-        [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
-        #[securestring]
-        [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
+        [switch]
+        $skipCertificateCheck,
+        
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
+        [System.Management.Automation.PSCredential]
+        $cloudCredential = $script:WebDavCredential
         
     )
     

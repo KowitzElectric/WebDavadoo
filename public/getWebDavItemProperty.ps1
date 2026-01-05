@@ -4,10 +4,10 @@
 
 .PARAMETER WebDavUrl
     Full WebDAV URL of the file or directory.
-
+.PARAMETER SkipCertificateCheck
+    Switch to skip SSL/TLS certificate validation. This is just for testing purposes and not recommended for production use.
 .PARAMETER CloudCredential
     PSCredential for authentication.
-
 .EXAMPLE
     $url = "https://webdav.example.com/remote.php/webdav/path/to/item.txt"
     Get-WebDavItemProperty -WebDavUrl $url -CloudCredential (Get-Credential)
@@ -16,31 +16,59 @@
 function Get-WebDavItemProperty {
     [CmdletBinding()]
     param(
-        [Parameter(
-            Mandatory,
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName
-        )]
-        [string]$WebDavUrl,
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        [string]
+        $WebDavUrl,
 
-        [Parameter()]
-        [System.Management.Automation.PSCredential]$CloudCredential = $script:WebDavCredential
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
+        [switch]
+        $skipCertificateCheck,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 3)]
+        [System.Management.Automation.PSCredential]
+        $CloudCredential = $script:WebDavCredential
     )
 
     process {
-        try {
-            Write-Verbose "Requesting WebDAV properties for $WebDavUrl"
-            $resp = Invoke-WebRequest `
-                -Uri $WebDavUrl `
-                -CustomMethod PROPFIND `
-                -Headers @{ Depth = "0" } `
-                -Authentication Basic `
-                -Credential $CloudCredential
+        if ($skipCertificateCheck) {
+            Write-Verbose "Skipping SSL certificate check."
+            try {
+                Write-Verbose "Requesting WebDAV properties for $WebDavUrl"
+                $resp = Invoke-WebRequest `
+                    -Uri $WebDavUrl `
+                    -CustomMethod PROPFIND `
+                    -Headers @{ Depth = "0" } `
+                    -Authentication Basic `
+                    -SkipCertificateCheck `
+                    -Credential $CloudCredential
+            }
+            catch {
+                Write-Error "Failed to get item properties: $_"
+                return
+            }
         }
-        catch {
-            Write-Error "Failed to get item properties: $_"
-            return
+        else {
+            try {
+                Write-Verbose "Requesting WebDAV properties for $WebDavUrl"
+                $resp = Invoke-WebRequest `
+                    -Uri $WebDavUrl `
+                    -CustomMethod PROPFIND `
+                    -Headers @{ Depth = "0" } `
+                    -Authentication Basic `
+                    -Credential $CloudCredential
+            }
+            catch {
+                Write-Error "Failed to get item properties: $_"
+                return
+            }
         }
+        
 
         try {
             [xml]$xml = $resp.Content

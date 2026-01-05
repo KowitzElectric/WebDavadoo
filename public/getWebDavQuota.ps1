@@ -5,6 +5,9 @@
 .PARAMETER WebDavUrl
     Full WebDAV URL of the root directory.
 
+.PARAMETER SkipCertificateCheck
+    Switch to skip SSL/TLS certificate validation. This is just for testing purposes and not recommended for production use.
+
 .PARAMETER CloudCredential
     PSCredential for authentication.
 
@@ -15,9 +18,23 @@
 #>
 function Get-WebDavQuota {
     param(
-        [Parameter(Mandatory)][string]$WebDavUrl,
-        [Parameter(Mandatory = $false, Position = 1)][switch]$skipCertificateCheck,
-        [Parameter()][System.Management.Automation.PSCredential]$CloudCredential = $script:WebDavCredential
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        [string]
+        $WebDavUrl,
+
+        [Parameter(Mandatory = $false, 
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1)]
+        [switch]
+        $skipCertificateCheck,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
+        [System.Management.Automation.PSCredential]
+        $CloudCredential = $script:WebDavCredential
     )
     begin {
         
