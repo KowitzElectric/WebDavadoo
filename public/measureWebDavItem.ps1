@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Measure the size and count of files and directories at a WebDAV URL.
+    Measure the size and count of files and directories at a WebDAV URL.  Answers: How big is this?
 .DESCRIPTION
     Measure the size and count of files and directories at a WebDAV URL.
-.PARAMETER WebDavUrlOfFile
+.PARAMETER WebDavUrl
     The webdav url down to the file or directory that you want to measure. This should be the full path to the file or directory.
 .PARAMETER Recurse
     Switch to indicate whether to measure recursively through subdirectories.
@@ -12,10 +12,10 @@
 .PARAMETER CloudCredential
     Use this to log into the cloud server webdav.
 .EXAMPLE
-    Measure-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFolder" -Recurse
+    Measure-WebDavItem -WebDavUrl "https://example.com/webdav/MyFolder" -Recurse
     This will measure the size and count of files and directories in 'MyFolder' and all its subdirectories on the cloud file server.
 .EXAMPLE
-    Measure-WebDavItem -WebDavUrlOfFile "https://example.com/webdav/MyFolder/MyFile.txt" -skipCertificateCheck
+    Measure-WebDavItem -WebDavUrl "https://example.com/webdav/MyFolder/MyFile.txt" -skipCertificateCheck
     This will measure the size of the file 'MyFile.txt' on the cloud file server, skipping certificate validation.
 #>
 function Measure-WebDavItem {
@@ -25,7 +25,7 @@ function Measure-WebDavItem {
             ValueFromPipelineByPropertyName = $true,
             Position = 0)]
         [string]
-        $WebDavUrlOfFile,
+        $WebDavUrl,
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
@@ -65,10 +65,10 @@ function Measure-WebDavItem {
             Write-Verbose "Measuring WebDAV item at '$WebDavUrl' recursively."
             if ($SkipCertificateCheck) {
                 Write-Verbose "Skipping certificate check for recursive WebDAV measurement."
-                MeasureWebDavItem_WalkTree -Url $WebDavUrl -Recurse:$true -SkipCertificateCheck
+                MeasureWebDavItem_WalkTree -Url $WebDavUrl -Recurse -SkipCertificateCheck
             }
             else {
-                MeasureWebDavItem_WalkTree -Url $WebDavUrl -Recurse:$true
+                MeasureWebDavItem_WalkTree -Url $WebDavUrl -Recurse
             }
         }
         else {

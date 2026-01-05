@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Get the child items of a directory on a cloud file server using WebDAV.
+    Get the child items of a directory on a cloud file server using WebDAV.  Answers: What is here?
 .DESCRIPTION
     This function uses WebDAV to retrieve the child items (files and directories) of a specified directory on a cloud file server. It returns an array of custom objects, each representing a child item with properties such as Name, Type, LastWriteTime, and Length.
 .PARAMETER WebDavUrl
@@ -85,6 +85,11 @@ function Get-WebDavChildItem {
         }
 
         [xml]$xml = $response.Content
+
+        if (-not $xml.multistatus -or -not $xml.multistatus.response) {
+            Write-Verbose "No child items returned for $WebDavUrl"
+            return
+        }
 
         $basePath = ($xml.multistatus.response[0].href -replace '/[^/]+/?$', '/')
 

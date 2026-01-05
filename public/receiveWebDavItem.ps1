@@ -7,7 +7,7 @@
     The WebDAV URL of the directory to download.
 .PARAMETER LocalPath
     The local path to download the files to.
-.PARAMETER Recursive
+.PARAMETER Recurse
     If specified, download directories recursively.
 .PARAMETER CloudCredential
     The credential used to authenticate with the WebDAV server.
@@ -21,7 +21,7 @@ function Receive-WebDavItem {
             ValueFromPipelineByPropertyName = $true,
             Position = 0)]
         [string]
-        $WebDavUrlOfFile,
+        $WebDavUrl,
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
@@ -31,7 +31,7 @@ function Receive-WebDavItem {
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 2)]
-        [bool]$Recursive = $false,
+        [switch]$Recurse = $false,
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
@@ -62,10 +62,14 @@ function Receive-WebDavItem {
     } # begin {
 
     process {
-        # If the URL does not end in /
-        # assume it's a file and download directly
-        if (-not $WebDavUrl.TrimEnd().EndsWith('/')) {
+        # If not a directory, just download the single file
+        $itemProps = Get-WebDavItemProperty `
+            -WebDavUrl $WebDavUrl `
+            -SkipCertificateCheck:$SkipCertificateCheck `
+            -CloudCredential $CloudCredential
 
+        $isDirectory = $itemProps.ContentType -eq 'directory'
+        if (-not $isDirectory) {
             $fileName = Split-Path $WebDavUrl -Leaf
             $target = Join-Path $LocalPath $fileName
 
@@ -91,17 +95,27 @@ function Receive-WebDavItem {
                 return
 
             } # else {
-        } # if (-not $WebDavUrl.TrimEnd().EndsWith('/')) {
+        } # if(-not $isDirectory) {
 
         # Otherwise, walk the tree
         if ($SkipCertificateCheck) {
             Write-Verbose "Skipping certificate check. Receiving WebDAV items from $WebDavUrl to $LocalPath"
-            ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recursive:$Recursive -CloudCredential $CloudCredential -SkipCertificateCheck
-        }
+            if ($Recurse) {
+                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recurse -CloudCredential $CloudCredential -SkipCertificateCheck
+            }
+            else {
+                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -CloudCredential $CloudCredential -SkipCertificateCheck
+            }
+        } # if ($SkipCertificateCheck) {
         else {
             Write-Verbose "Receiving WebDAV items from $WebDavUrl to $LocalPath"
-            ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recursive:$Recursive -CloudCredential $CloudCredential
-        }
+            if ($Recurse) {
+                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recurse -CloudCredential $CloudCredential
+            }
+            else {
+                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -CloudCredential $CloudCredential
+            }
+        } # else {
     }
 
     end {

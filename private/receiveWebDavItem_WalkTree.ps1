@@ -9,7 +9,7 @@
     The current WebDAV URL to process.
 .PARAMETER CurrentLocalPath
     The current local path to process.
-.PARAMETER Recursive
+.PARAMETER Recurse
     If specified, download directories recursively.
 .PARAMETER CloudCredential
     The credential used to authenticate with the WebDAV server.
@@ -19,10 +19,12 @@ function ReceiveWebDavItem_WalkTree {
     param(
         [string]$CurrentUrl,
         [string]$CurrentLocalPath,
-        [bool]$Recursive,
+        [switch]$Recurse,
         [switch]$SkipCertificateCheck = $false,
         [System.Management.Automation.PSCredential]$CloudCredential
     )
+    # Normalize CurrentUrl for comparison
+    $normalizedCurrentUrl = $CurrentUrl.TrimEnd('/') + '/'
 
     if ($SkipCertificateCheck) {
         $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl -SkipCertificateCheck
@@ -34,10 +36,18 @@ function ReceiveWebDavItem_WalkTree {
     foreach ($item in $items) {
 
         # If an empty folder, then usually the first entry is the folder itself. Skip it.
-        if ($item.href -eq (New-Object System.Uri($CurrentUrl)).AbsolutePath -and $item.Length -eq 0) {
+        <# if ($item.href -eq (New-Object System.Uri($CurrentUrl)).AbsolutePath -and $item.Length -eq 0) {
             Write-Verbose "Skipping empty directory entry: $($item.href)"
             continue
+        } #>
+
+        $itemHref = $item.HREF.TrimEnd('/') + '/'
+
+        if ($itemHref -eq $normalizedCurrentUrl) {
+            Write-Verbose "Skipping self directory entry: $itemHref"
+            continue
         }
+
 
         $name = $item.Name.Split('/') | Select-Object -Last 1; # Name: Jobs/Resumes
         $localTarget = Join-Path $CurrentLocalPath $name
@@ -54,15 +64,15 @@ function ReceiveWebDavItem_WalkTree {
                 ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
             }
             
-            if ($Recursive) {
+            if ($Recurse) {
                 Write-Verbose "Recursing into directory: $dirUrl"
                 if ($SkipCertificateCheck) {
-                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -CurrentLocalPath $localTarget -CloudCredential $CloudCredential -SkipCertificateCheck
+                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -Recurse -CurrentLocalPath $localTarget -CloudCredential $CloudCredential -SkipCertificateCheck
                 }
                 else {
-                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
+                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -Recurse -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
                 }
-            } # if ($Recursive) {
+            } # if ($Recurse) {
         }
         else {
             Write-Verbose "Downloading file: $CurrentUrl"

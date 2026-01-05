@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
-    Retrieves WebDAV item metadata (etag, last modified, size, etc.)
-
+    Retrieves WebDAV item metadata (etag, last modified, size, etc.)  Answers: Tell me about this item.
+.DESCRIPTION
+    This function retrieves metadata for a specified file or directory on a cloud file server using WebDAV. It returns a custom object containing properties such as ETag, LastModified, ContentType, and
 .PARAMETER WebDavUrl
     Full WebDAV URL of the file or directory.
 .PARAMETER SkipCertificateCheck

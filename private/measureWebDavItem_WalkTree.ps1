@@ -33,10 +33,10 @@ function MeasureWebDavItem_WalkTree {
                 #$dirUrl = ($Url.TrimEnd('/') + '/' + $item.Name.TrimEnd('/') + '/')
                 $dirUrl = $item.HREF;
                 if ($SkipCertificateCheck) {
-                    MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse:$true -SkipCertificateCheck
+                    MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse -SkipCertificateCheck
                 }
                 else {
-                    MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse:$true
+                    MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse
                 }
             } # if recurse
         } # if ($item.Type -eq "Directory")
