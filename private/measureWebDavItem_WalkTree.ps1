@@ -1,48 +1,57 @@
 function MeasureWebDavItem_WalkTree {
     param(
-        [string]$Url,
-        [switch]$Recurse = $false,
-        [switch]$SkipCertificateCheck = $false
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        [string]
+        $Url,
+        
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1)]
+        [switch]
+        $Recurse = $false,
+        
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
+        [switch]
+        $SkipCertificateCheck = $false
     )
-
-    if ($SkipCertificateCheck) {
-        $items = Get-WebDavChildItem -WebDavUrl $Url -CloudCredential $CloudCredential -SkipCertificateCheck
-    }
-    else {
-        $items = Get-WebDavChildItem -WebDavUrl $Url -CloudCredential $CloudCredential 
-    }
-
-    foreach ($item in $items) {
-
-        # Skip the self-reference entry if present
-        <# if ($item.HREF -eq (New-Object System.Uri($Url)).AbsolutePath) {
-            continue
-        } # if ($item.HREF -eq (New-Object System.Uri($Url)).AbsolutePath) #>
-        $curr = [Uri]$Url
-        $itemUri = [Uri]$item.HREF
-
-        if ($itemUri.AbsoluteUri -eq $curr.AbsoluteUri) {
-            continue
+    begin {
+        if ($SkipCertificateCheck) {
+            $items = Get-WebDavChildItem -WebDavUrl $Url -CloudCredential $CloudCredential -SkipCertificateCheck
         }
-
-
-        if ($item.Type -eq "Directory") {
-            $stats.DirectoryCount++
-
-            if ($Recurse) {
-                #$dirUrl = ($Url.TrimEnd('/') + '/' + $item.Name.TrimEnd('/') + '/')
-                $dirUrl = $item.HREF;
-                if ($SkipCertificateCheck) {
-                    MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse -SkipCertificateCheck
-                }
-                else {
-                    MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse
-                }
-            } # if recurse
-        } # if ($item.Type -eq "Directory")
         else {
-            $stats.FileCount++
-            $stats.TotalBytes += [int64]$item.Length
-        } # else
-    } # foreach ($item in $items)
+            $items = Get-WebDavChildItem -WebDavUrl $Url -CloudCredential $CloudCredential 
+        }
+    } # begin{
+    process {
+        foreach ($item in $items) {
+            $curr = [Uri]$Url
+            $itemUri = [Uri]$item.HREF
+
+            if ($itemUri.AbsoluteUri -eq $curr.AbsoluteUri) {
+                continue
+            } # if ($itemUri.AbsoluteUri -eq $curr.AbsoluteUri) {
+            if ($item.Type -eq "Directory") {
+                $stats.DirectoryCount++
+
+                if ($Recurse) {
+                    $dirUrl = $item.HREF;
+                    if ($SkipCertificateCheck) {
+                        MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse -SkipCertificateCheck
+                    }
+                    else {
+                        MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse
+                    }
+                } # if recurse
+            } # if ($item.Type -eq "Directory")
+            else {
+                $stats.FileCount++
+                $stats.TotalBytes += [int64]$item.Length
+            } # else
+        } # foreach ($item in $items)
+    } # process {
+    end {}
 } # function MeasureWebDavItem_WalkTree {

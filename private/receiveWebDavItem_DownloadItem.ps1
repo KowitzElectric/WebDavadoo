@@ -15,48 +15,75 @@
 #>
 function ReceiveWebDavItem_DownloadItem {
     param(
-        [string]$ItemUrl,
-        [string]$TargetPath,
-        [bool]$IsDirectory,
-        [switch]$SkipCertificateCheck = $false,
-        [System.Management.Automation.PSCredential]$CloudCredential
-    )
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        [string]
+        $ItemUrl,
 
-    if ($IsDirectory) {
-        if (-not (Test-Path $TargetPath)) {
-            Write-Verbose "Creating directory: $TargetPath"
-            New-Item -ItemType Directory -Path $TargetPath | Out-Null
-        }
-    }
-    else {
-        Write-Verbose "Downloading $ItemUrl -> $TargetPath"
-        if ($SkipCertificateCheck) {
-            try {
-                Invoke-WebRequest `
-                    -Uri $ItemUrl `
-                    -OutFile $TargetPath `
-                    -Authentication Basic `
-                    -Credential $CloudCredential `
-                    -SkipCertificateCheck `
-                    -ErrorAction Stop
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1)]
+        [string]
+        $TargetPath,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
+        [bool]
+        $IsDirectory,
+        
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 3)]
+        [switch]
+        $SkipCertificateCheck = $false,
+        
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
+        [System.Management.Automation.PSCredential]
+        $CloudCredential = $script:WebDavCredential
+    )
+    begin {}
+    process {
+        if ($IsDirectory) {
+            if (-not (Test-Path $TargetPath)) {
+                Write-Verbose "Creating directory: $TargetPath"
+                New-Item -ItemType Directory -Path $TargetPath | Out-Null
             }
-            catch {
-                Write-Error "Failed to download file: $_"
-            }
-            return
         }
         else {
-            try {
-                Invoke-WebRequest `
-                    -Uri $ItemUrl `
-                    -OutFile $TargetPath `
-                    -Authentication Basic `
-                    -Credential $CloudCredential `
-                    -ErrorAction Stop
+            Write-Verbose "Downloading $ItemUrl -> $TargetPath"
+            if ($SkipCertificateCheck) {
+                try {
+                    Invoke-WebRequest `
+                        -Uri $ItemUrl `
+                        -OutFile $TargetPath `
+                        -Authentication Basic `
+                        -Credential $CloudCredential `
+                        -SkipCertificateCheck `
+                        -ErrorAction Stop
+                }
+                catch {
+                    Write-Error "Failed to download file: $_"
+                }
+                return
             }
-            catch {
-                Write-Error "Failed to download file: $_"
+            else {
+                try {
+                    Invoke-WebRequest `
+                        -Uri $ItemUrl `
+                        -OutFile $TargetPath `
+                        -Authentication Basic `
+                        -Credential $CloudCredential `
+                        -ErrorAction Stop
+                }
+                catch {
+                    Write-Error "Failed to download file: $_"
+                }
             }
         }
-    }
+    } # process{
+    end {}
 } # function ReceiveWebDavItem_DownloadItem {

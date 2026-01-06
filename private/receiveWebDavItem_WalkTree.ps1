@@ -17,78 +17,98 @@
 #>
 function ReceiveWebDavItem_WalkTree {
     param(
-        [string]$CurrentUrl,
-        [string]$CurrentLocalPath,
-        [switch]$Recurse,
-        [switch]$SkipCertificateCheck = $false,
-        [System.Management.Automation.PSCredential]$CloudCredential
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        [string]
+        $CurrentUrl,
+        
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1)]
+        [string]
+        $CurrentLocalPath,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 2)]
+        [switch]
+        $Recurse,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 3)]
+        [switch]
+        $SkipCertificateCheck = $false,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
+        [System.Management.Automation.PSCredential]
+        $CloudCredential = $script:WebDavCredential
     )
-    # Normalize CurrentUrl for comparison
-    $normalizedCurrentUrl = $CurrentUrl.TrimEnd('/') + '/'
+    begin {
+        # Normalize CurrentUrl for comparison.  This ensures it ends with a slash by removing any trailing slashes and adding one.
+        $normalizedCurrentUrl = $CurrentUrl.TrimEnd('/') + '/'
 
-    if ($SkipCertificateCheck) {
-        $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl -SkipCertificateCheck
-    }
-    else {
-        $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl
-    }
-    
-    foreach ($item in $items) {
-
-        # If an empty folder, then usually the first entry is the folder itself. Skip it.
-        <# if ($item.href -eq (New-Object System.Uri($CurrentUrl)).AbsolutePath -and $item.Length -eq 0) {
-            Write-Verbose "Skipping empty directory entry: $($item.href)"
-            continue
-        } #>
-
-        $itemHref = $item.HREF.TrimEnd('/') + '/'
-
-        if ($itemHref -eq $normalizedCurrentUrl) {
-            Write-Verbose "Skipping self directory entry: $itemHref"
-            continue
-        }
-
-
-        $name = $item.Name.Split('/') | Select-Object -Last 1; # Name: Jobs/Resumes
-        $localTarget = Join-Path $CurrentLocalPath $name
-        $isDir = $item.Length -eq 0 -and $item.Type -eq 'Directory'                
-                
-        if ($isDir) {
-            $dirUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name + '/')
-            Write-Verbose "Entering directory: $dirUrl" 
-            if ($SkipCertificateCheck) {
-                Write-Verbose "Skipping certificate check for directory creation: $localTarget"
-                ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential -SkipCertificateCheck
-            }
-            else {
-                ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
-            }
-            
-            if ($Recurse) {
-                Write-Verbose "Recursing into directory: $dirUrl"
-                if ($SkipCertificateCheck) {
-                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -Recurse -CurrentLocalPath $localTarget -CloudCredential $CloudCredential -SkipCertificateCheck
-                }
-                else {
-                    ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -Recurse -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
-                }
-            } # if ($Recurse) {
+        if ($SkipCertificateCheck) {
+            $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl -SkipCertificateCheck
         }
         else {
-            Write-Verbose "Downloading file: $CurrentUrl"
-            Write-Verbose "To local path: $localTarget"
-            Write-Verbose "IsDirectory: $false"
-            $fileUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name)
-            if ($SkipCertificateCheck) {
-                Write-Verbose "Skipping certificate check for file download: $localTarget"
-                ReceiveWebDavItem_DownloadItem -ItemUrl $fileUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential -SkipCertificateCheck
+            $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl
+        }
+    } # begin{
+    process {
+        foreach ($item in $items) {
+            # If an empty folder, then usually the first entry is the folder itself. Skip it.
+            $itemHref = $item.HREF.TrimEnd('/') + '/'
+            if ($itemHref -eq $normalizedCurrentUrl) {
+                Write-Verbose "Skipping self directory entry: $itemHref"
+                continue
+            } # if ($itemHref -eq $normalizedCurrentUrl) {
+
+            $name = $item.Name.Split('/') | Select-Object -Last 1; # Name: Jobs/Resumes
+            $localTarget = Join-Path $CurrentLocalPath $name
+            $isDir = $item.Length -eq 0 -and $item.Type -eq 'Directory'                
+                
+            if ($isDir) {
+                $dirUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name + '/')
+                Write-Verbose "Entering directory: $dirUrl" 
+                if ($SkipCertificateCheck) {
+                    Write-Verbose "Skipping certificate check for directory creation: $localTarget"
+                    ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential -SkipCertificateCheck
+                }
+                else {
+                    ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
+                }
             
+                if ($Recurse) {
+                    Write-Verbose "Recursing into directory: $dirUrl"
+                    if ($SkipCertificateCheck) {
+                        ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -Recurse -CurrentLocalPath $localTarget -CloudCredential $CloudCredential -SkipCertificateCheck
+                    }
+                    else {
+                        ReceiveWebDavItem_WalkTree -CurrentUrl $dirUrl -Recurse -CurrentLocalPath $localTarget -CloudCredential $CloudCredential
+                    }
+                } # if ($Recurse) {
             }
             else {
-                ReceiveWebDavItem_DownloadItem -ItemUrl $fileUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential
+                Write-Verbose "Downloading file: $CurrentUrl"
+                Write-Verbose "To local path: $localTarget"
+                Write-Verbose "IsDirectory: $false"
+                $fileUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name)
+                if ($SkipCertificateCheck) {
+                    Write-Verbose "Skipping certificate check for file download: $localTarget"
+                    ReceiveWebDavItem_DownloadItem -ItemUrl $fileUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential -SkipCertificateCheck
             
-            }
+                }
+                else {
+                    ReceiveWebDavItem_DownloadItem -ItemUrl $fileUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential
             
-        } # else {
-    } # foreach ($item in $items) {
+                }
+            
+            } # else {
+        } # foreach ($item in $items) {
+    } # process{
+    end {}
 } # function ReceiveWebDavItem_WalkTree {
