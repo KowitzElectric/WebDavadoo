@@ -36,6 +36,9 @@ function Get-WebDavItemProperty {
         $CloudCredential = $script:WebDavCredential
     )
 
+    begin {
+    } # begin {
+
     process {
         if ($skipCertificateCheck) {
             Write-Verbose "Skipping SSL certificate check."

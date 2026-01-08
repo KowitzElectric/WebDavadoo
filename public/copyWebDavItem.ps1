@@ -68,6 +68,8 @@ function Copy-WebDavItem {
         if ($skipCertificateCheck) {
             try {
                 # invoke-webrequest to copy the file.  skip http error check to always get the data in $response
+                Write-Verbose "Skipping certificate check as per user request."
+                Write-Verbose "Copying item from $WebDavUrlOfFile to $DestinationWebDavUrlOfFile"
                 $response = Invoke-WebRequest `
                     -Uri $WebDavUrlOfFile `
                     -CustomMethod COPY `
@@ -86,6 +88,7 @@ function Copy-WebDavItem {
         else {
             try {
                 # invoke-webrequest to copy the file.  skip http error check to always get the data in $response
+                Write-Verbose "Copying item from $WebDavUrlOfFile to $DestinationWebDavUrlOfFile"
                 $response = Invoke-WebRequest `
                     -Uri $WebDavUrlOfFile `
                     -CustomMethod COPY `
@@ -122,7 +125,12 @@ function Copy-WebDavItem {
             }
         }
 
-        # Return results to pipeline
-        $results
+        [pscustomobject]@{
+            Source      = $WebDavUrlOfFile
+            Destination = $DestinationWebDavUrlOfFile
+            StatusCode  = $statusCode
+            Status      = $statusDescription
+            Success     = ($statusCode -like '2*')
+        }
     }
 } # function Copy-WebDavItem
