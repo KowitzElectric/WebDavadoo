@@ -59,5 +59,33 @@ Describe "Get-WebDavChildItem" {
       ($result | Where-Object { $_.Type -eq 'File' }).Displayname | Should -Be 'file.txt'
       ($result | Where-Object { $_.Type -eq 'Directory' }).Displayname | Should -Be 'subdir'
     } # It "returns items for non-empty directories" {
+
+    It 'accepts WebDavUrl from pipeline' {
+      Mock Invoke-WebRequest -ModuleName WebDavadoo {
+        @{
+          Content = @"
+<?xml version="1.0" encoding="utf-8"?><D:multistatus xmlns:D="DAV:"><D:response><D:href>https://example.com/webdav2/</D:href><D:propstat><D:status>HTTP/1.1 200 OK</D:status><D:prop><D:getcontenttype/><D:getlastmodified>Wed, 07 Jan 2026 04:40:13 GMT</D:getlastmodified><D:lockdiscovery/><D:ishidden>0</D:ishidden><D:supportedlock><D:lockentry><D:lockscope><D:exclusive/></D:lockscope><D:locktype><D:write/></D:locktype></D:lockentry><D:lockentry><D:lockscope><D:shared/></D:lockscope><D:locktype><D:write/></D:locktype></D:lockentry></D:supportedlock><D:getetag/><D:displayname>webdav2</D:displayname><D:getcontentlanguage/><D:getcontentlength>0</D:getcontentlength><D:iscollection>1</D:iscollection><D:creationdate>2026-01-07T04:40:05.875Z</D:creationdate><D:resourcetype><D:collection/></D:resourcetype></D:prop></D:propstat></D:response><D:response><D:href>https://example.com/webdav2/testfile.txt</D:href><D:propstat><D:status>HTTP/1.1 200 OK</D:status><D:prop><D:getcontenttype>text/plain</D:getcontenttype><D:getlastmodified>Mon, 05 Jan 2026 07:20:43 GMT</D:getlastmodified><D:lockdiscovery/><D:ishidden>0</D:ishidden><D:supportedlock><D:lockentry><D:lockscope><D:exclusive/></D:lockscope><D:locktype><D:write/></D:locktype></D:lockentry><D:lockentry><D:lockscope><D:shared/></D:lockscope><D:locktype><D:write/></D:locktype></D:lockentry></D:supportedlock><D:getetag>"985298cd137edc1:0"</D:getetag><D:displayname>testfile.txt</D:displayname><D:getcontentlanguage/><D:getcontentlength>3712</D:getcontentlength><D:iscollection>0</D:iscollection><D:creationdate>2026-01-07T04:40:13.895Z</D:creationdate><D:resourcetype/></D:prop></D:propstat></D:response></D:multistatus>
+"@
+        }
+      } # Mock Invoke-WebRequest {
+      $inputObject = [pscustomobject]@{
+        WebDavUrl = 'https://example.com/webdav2/'
+      }
+
+      $result = $inputObject | Get-WebDavChildItem
+
+      Assert-MockCalled Invoke-WebRequest -Times 1 -ParameterFilter {
+        $Uri -eq 'https://example.com/webdav2/'
+      }
+
+      $result.Href          | Should -Be 'https://example.com/webdav2/testfile.txt'
+      $result.Name          | Should -Be 'webdav2/testfile.txt'
+      $result.DisplayName   | Should -Be 'testfile.txt'
+      $result.Type          | Should -Be 'File'
+      $result.LastWriteTime | Should -Be ([datetime]'1/5/2026 1:20:43 AM')
+      $result.Length        | Should -Be 3712
+      $result.ContentType   | Should -Be 'text/plain'
+      
+    } # It 'accepts WebDavUrl from pipeline' {
   } # InModuleScope WebDavadoo
 } # Describe
