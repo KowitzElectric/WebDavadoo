@@ -1,1 +1,1 @@
-Import-Module "$PSScriptRoot/../WebDavadoo.psd1" -Force
+Import-Module "$PSScriptRoot/../WebDavadoo/WebDavadoo.psd1" -Force

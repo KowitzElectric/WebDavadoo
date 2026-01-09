@@ -42,13 +42,56 @@ function Get-WebDavQuota {
     
     process {
 
-        if ($skipCertificateCheck) {
+        <#         if ($skipCertificateCheck) {
             $resp = Invoke-WebRequest -Uri $WebDavUrl -CustomMethod PROPFIND -Headers @{ Depth = "0" } -Authentication Basic -Credential $CloudCredential -SkipCertificateCheck
         }
         else {
             $resp = Invoke-WebRequest -Uri $WebDavUrl -CustomMethod PROPFIND -Headers @{ Depth = "0" } -Authentication Basic -Credential $CloudCredential
-        }
+        } #>
         
+        $body = @'
+<?xml version="1.0" encoding="utf-8" ?>
+<D:propfind xmlns:D="DAV:">
+  <D:prop>
+    <D:quota-used-bytes />
+    <D:quota-available-bytes />
+  </D:prop>
+</D:propfind>
+'@
+        if ($skipCertificateCheck) {
+            try {
+                $resp = Invoke-WebRequest `
+                    -Uri $WebDavUrl `
+                    -CustomMethod PROPFIND `
+                    -Headers @{ Depth = "0" } `
+                    -Body $body `
+                    -ContentType 'application/xml' `
+                    -Authentication Basic `
+                    -Credential $CloudCredential `
+                    -SkipCertificateCheck
+            }
+            catch {
+                Write-Error "Error retrieving quota information: $_"
+                return
+            }
+        }
+        else {
+            try {
+                $resp = Invoke-WebRequest `
+                    -Uri $WebDavUrl `
+                    -CustomMethod PROPFIND `
+                    -Headers @{ Depth = "0" } `
+                    -Body $body `
+                    -ContentType 'application/xml' `
+                    -Authentication Basic `
+                    -Credential $CloudCredential
+            } # try
+            catch {
+                Write-Error "Error retrieving quota information: $_"
+                return
+            } # catch
+        } # else
+
         [xml]$xml = $resp.Content
         $prop = $xml.multistatus.response.propstat.prop
 
