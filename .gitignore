@@ -3,5 +3,5 @@
 *.log
 
 # Local integration tests (self-hosted WebDAV)
-realworldtests.ps1
+realWorldTests.ps1
 testresults.xml
