@@ -26,11 +26,17 @@ function Remove-WebDavItem {
             ValueFromPipelineByPropertyName = $true,
             Position = 1)]
         [switch]
-        $SkipCertificateCheck = $false,
+        $ShowResult = $false,
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 2)]
+        [switch]
+        $SkipCertificateCheck = $false,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 3)]
         [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
         
     )
@@ -44,41 +50,35 @@ function Remove-WebDavItem {
     } # begin {
 
     process {
+        $params = @{
+            Uri            = $WebDavUrlOfFile
+            CustomMethod   = "DELETE"
+            Authentication = "Basic"
+            Credential     = $cloudCredential
+        }
         if ($SkipCertificateCheck) {
-            $response = Invoke-WebRequest `
-                -Uri $WebDavUrlOfFile `
-                -CustomMethod DELETE `
-                -Authentication Basic `
-                -SkipCertificateCheck `
-                -Credential $cloudCredential
-
+            $params.Add("SkipCertificateCheck", $true)
         } # if ($SkipCertificateCheck) {
-        else {
-            try {
-                $response = Invoke-WebRequest `
-                    -Uri $WebDavUrlOfFile `
-                    -CustomMethod DELETE `
-                    -Authentication Basic `
-                    -Credential $cloudCredential
-            } # try {
-            catch {
-                Write-Error "Failed to remove item: $_"
-            } # catch {        
-        } # else {    
+        
+        try {
+            $response = Invoke-WebRequest @params
+            # If we reach here, the command didn't throw an error.
+            Write-Verbose "Successfully deleted: $WebDavUrlOfFile"
+            Write-Verbose "Status: $($response.StatusCode) $($response.StatusDescription)"
+
+        } # try {
+        catch {
+            Write-Error "Failed to remove item: $_"
+        } # catch {        
+      
     } # process {
     
     end {
-        if ($PSCmdlet.MyInvocation.BoundParameters.Verbose) {
-            Write-Verbose ("Status: {0} {1}" -f $response.StatusCode, $response.StatusDescription)
 
-            if ($response.Headers['X-Request-ID']) {
-                Write-Verbose ("Request ID: {0}" -f $response.Headers['X-Request-ID'])
-            }
-
-            if ($response.Headers['OC-ETag']) {
-                Write-Verbose ("ETag: {0}" -f $response.Headers['OC-ETag'])
-            }
+        if ($ShowResult) {
+            Write-Output "Removed item: $WebDavUrlOfFile"
         }
         
-    }
+        
+    } # end {
 } # function Remove-WebDavItem

@@ -2,11 +2,9 @@
 .SYNOPSIS
     Creates a new directory on a cloud file server using webdav.
 .DESCRIPTION
-    Creates a new directory on a cloud file server using webdav.
+    This function creates a new directory on a cloud file server using webdav protocol. It uses the MKCOL method to create the directory at the specified location.
 .PARAMETER webDavUrl
     The webdav url you can get from the settings of the cloud file server.
-.PARAMETER directory
-    The directory on the cloud file server to create the new directory in.  If no directory is specified it will create the new directory in the root of the cloud file server.
 .PARAMETER newDirectoryName
     The name of the new directory you want to create.
 .PARAMETER skipCertificateCheck
@@ -14,12 +12,11 @@
 .PARAMETER cloudCredential
     Use this to log into the cloud server webdav.
 .EXAMPLE
-    New-WebDavDirectory -webDavUrl "https://example.com/webdav" -directory "MyFolder" -newDirectoryName "NewFolder" -cloudCredential (Get-Credential)
-    "This will create a new directory called 'NewFolder' in the 'MyFolder' directory on the cloud file server."
+    New-WebDavDirectory -webDavUrl "https://example.com/webdav" -newDirectoryName "NewFolder" -cloudCredential (Get-Credential)
+    "This will create a new directory called 'NewFolder' in the root of the cloud file server."
 .EXAMPLE
-    New-WebDavDirectory -webDavUrl "https://example.com/remote.php/dav/files/Jgalt" -newDirectoryName 'fromFunction4' -directory fromFunction2/fromFunction3 -cloudCredential (Get-Credential)
-    "This will create a new directory called 'fromFunction4' in the 'fromFunction2/fromFunction3' directory on the cloud file server.  fromFunction2 and fromFunction3 must already exist, and
-    fromFunction2 is off of the root directory."
+    New-WebDavDirectory -webDavUrl "https://example.com/remote.php/dav/files/Jgalt/Folder1" -newDirectoryName 'SubFolder1' -cloudCredential (Get-Credential)
+    "This will create a new directory called 'SubFolder1' in the 'Folder1' directory on the cloud file server."
 #>
 function New-WebDavDirectory {
     [CmdletBinding()]
@@ -32,12 +29,6 @@ function New-WebDavDirectory {
     
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
-            Position = 1)]
-        [string]
-        $directory,
-
-        [Parameter(Mandatory = $false,
-            ValueFromPipelineByPropertyName = $true,
             Position = 2)]
         [string]
         $newDirectoryName,
@@ -45,11 +36,17 @@ function New-WebDavDirectory {
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
-        [switch]$skipCertificateCheck,
+        [switch]
+        $ShowResult = $false,
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 4)]
+        [switch]$skipCertificateCheck,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 5)]
         [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
         
     )
@@ -59,35 +56,40 @@ function New-WebDavDirectory {
             Write-Error "This script requires PowerShell 7+"
             exit 1
         } # if ($PSVersionTable.PSVersion.Major -lt 7) {
-        if ($directory) {
-            $fullUriPath = "$webDavUrl/$directory/$newDirectoryName"
-        } # if ($directory) {
-        else {
-            $fullUriPath = "$webDavUrl/$newDirectoryName"
-        } # else {
-        
+        # This regex joins the path and ensures no double slashes exist after the protocol
+        $fullUriPath = "$webDavUrl/$newDirectoryName" -replace '(?<!:)/+', '/'        
     }
     
     process {
-        if ($skipCertificateCheck) {
-            try {
-                Invoke-RestMethod -Uri $fullUriPath -CustomMethod MKCOL -Credential $cloudCredential -SkipCertificateCheck
-            } # try {
-            catch {
-                Write-Error "Failed to create directory: $_"
-            } # catch {
+        $params = @{
+            Uri          = $fullUriPath
+            CustomMethod = 'MKCOL'
+            Credential   = $cloudCredential
         }
-        else {
-            try {
-                Invoke-RestMethod -Uri $fullUriPath -CustomMethod MKCOL -Credential $cloudCredential
-            } # try {
-            catch {
-                Write-Error "Failed to create directory: $_"
-            } # catch {
-        } # else
+
+        if ($SkipCertificateCheck) {
+            $params.Add("SkipCertificateCheck", $true)
+        } # if ($SkipCertificateCheck) {
+
+        
+        try {
+            $response = Invoke-WebRequest @params 
+            Write-Verbose "Successfully created directory: $newDirectoryName at $webDavUrl"
+        } # try {
+        catch {
+            Write-Error "Failed to create directory: $_"
+        } # catch {
     }
     
     end {
-        
+        $statusCode = $response.StatusCode
+        $statusDescription = $response.StatusDescription
+
+        if ($statusCode -eq 201 -and $statusDescription -eq "Created" -and $ShowResult) {
+            Write-Output "Created directory: $newDirectoryName at $webDavUrl"
+        }
+        else {
+            Write-Output "Failed to create directory: $newDirectoryName at $webDavUrl. Status Code: $statusCode, Status Description: $statusDescription"
+        }
     }
 } # function New-WebDavDirectory {

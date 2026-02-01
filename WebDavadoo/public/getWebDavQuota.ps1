@@ -69,7 +69,6 @@ function Get-WebDavQuota {
                     -Authentication Basic `
                     -Credential $CloudCredential `
                     -SkipCertificateCheck
-                    
             }
             catch {
                 Write-Error "Error retrieving quota information: $_"

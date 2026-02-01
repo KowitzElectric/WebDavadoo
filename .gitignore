@@ -1,0 +1,7 @@
+# Runtime artifacts
+*.tmp
+*.log
+
+# Local integration tests (self-hosted WebDAV)
+realworldtests.ps1
+test-results.xml

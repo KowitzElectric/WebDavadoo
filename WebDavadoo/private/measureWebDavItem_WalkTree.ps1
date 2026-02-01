@@ -19,6 +19,10 @@ function MeasureWebDavItem_WalkTree {
         $SkipCertificateCheck = $false
     )
     begin {
+        # Get the Base Server URL (e.g., https://files.thekozanos.com)
+        $uriObj = [Uri]$Url
+        $baseUrl = "{0}://{1}" -f $uriObj.Scheme, $uriObj.Host
+
         if ($SkipCertificateCheck) {
             $items = Get-WebDavChildItem -WebDavUrl $Url -CloudCredential $CloudCredential -SkipCertificateCheck
         }
@@ -28,22 +32,33 @@ function MeasureWebDavItem_WalkTree {
     } # begin{
     process {
         foreach ($item in $items) {
-            $curr = [Uri]$Url
-            $itemUri = [Uri]$item.HREF
+            # Fix: If the HREF is relative (starts with /), prepend the base URL
+            $fullItemUrl = $item.HREF
+            Write-Verbose "Processing item HREF: $fullItemUrl"
 
-            if ($itemUri.AbsoluteUri -eq $curr.AbsoluteUri) {
+            if ($fullItemUrl.StartsWith("/")) {
+                $fullItemUrl = $baseUrl + $fullItemUrl
+                Write-Verbose "Converted to full URL: $fullItemUrl"
+            }
+
+            $itemUri = [Uri]$fullItemUrl
+
+            # Compare to avoid infinite loops if the server returns '.' or the parent
+            if ($itemUri.AbsoluteUri.TrimEnd('/') -eq ([Uri]$Url).AbsoluteUri.TrimEnd('/')) {
                 continue
-            } # if ($itemUri.AbsoluteUri -eq $curr.AbsoluteUri) {
+            } # if ($itemUri.AbsoluteUri.TrimEnd('/') -eq ([Uri]$Url).AbsoluteUri.TrimEnd('/')) 
+            
             if ($item.Type -eq "Directory") {
                 $stats.DirectoryCount++
 
                 if ($Recurse) {
-                    $dirUrl = $item.HREF;
+                    
+                    Write-Verbose "Recursing into directory: $fullItemUrl"
                     if ($SkipCertificateCheck) {
-                        MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse -SkipCertificateCheck
+                        MeasureWebDavItem_WalkTree -Url $fullItemUrl -Recurse -SkipCertificateCheck
                     }
                     else {
-                        MeasureWebDavItem_WalkTree -Url $dirUrl -Recurse
+                        MeasureWebDavItem_WalkTree -Url $fullItemUrl -Recurse
                     }
                 } # if recurse
             } # if ($item.Type -eq "Directory")

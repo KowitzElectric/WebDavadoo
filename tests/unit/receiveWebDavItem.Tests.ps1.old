@@ -1,0 +1,58 @@
+Describe 'Receive-WebDavItem' {
+
+    BeforeEach {
+        # Reset script-scoped credential
+        Remove-Variable -Name WebDavCredential -Scope Script -ErrorAction SilentlyContinue
+
+        . "$PSScriptRoot/../testHelpers.ps1"
+
+        $TestCredential = New-Object System.Management.Automation.PSCredential(
+            'testuser',
+            (ConvertTo-SecureString 'testpass' -AsPlainText -Force)
+        )
+
+        $WebDavUrl = 'https://webdavadooexample.com/webdav'
+    }
+
+    Context 'Credential handling' {
+        It 'throws if no WebDAV credential is available' {
+            {
+                Receive-WebDavItem `
+                    -WebDavUrl 'https://example.com/file.txt' `
+                    -LocalPath 'TestDrive:\out'
+            } | Should -Throw 'No WebDAV credential found. Run Set-WebDavCredential first.'
+        }
+    }
+
+    Context 'Single file download' {
+        It 'downloads a single file when target is not a directory' {
+            InModuleScope  WebDavadoo {
+                # Set the script-scoped credential that the function expects
+                $script:WebDavCredential = New-Object System.Management.Automation.PSCredential(
+                    'testuser',
+                    (ConvertTo-SecureString 'testpass' -AsPlainText -Force)
+                )
+
+             
+                Mock Get-WebDavItemProperty {
+                    [pscustomobject]@{
+                        ContentType = 'text/plain'
+                    }
+                } 
+
+                Mock ReceiveWebDavItem_DownloadItem {}
+    
+                # Test the actual call
+                Receive-WebDavItem `
+                    -WebDavUrl 'https://example.com/file.txt' `
+                    -LocalPath 'C:\Downloads'
+
+                Assert-MockCalled ReceiveWebDavItem_DownloadItem -Times 1 -Exactly -ParameterFilter {
+                    $ItemUrl -eq 'https://example.com/file.txt' -and
+                    $TargetPath -eq 'C:\Downloads\file.txt' -and
+                    $IsDirectory -eq $false
+                }
+            }
+        }
+    }
+}
