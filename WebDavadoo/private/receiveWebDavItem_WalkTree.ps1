@@ -49,8 +49,11 @@ function ReceiveWebDavItem_WalkTree {
     )
     begin {
         # Normalize CurrentUrl for comparison.  This ensures it ends with a slash by removing any trailing slashes and adding one.
-        $normalizedCurrentUrl = $CurrentUrl.TrimEnd('/') + '/'
-
+        $currentUrl = $CurrentUrl.TrimEnd('/') + '/'
+        # Create a URI object for CurrentUrl
+        $baseuri = [uri]$CurrentUrl
+        $authorityUri = "{0}://{1}" -f $baseUri.Scheme, $baseUri.Authority
+        
         if ($SkipCertificateCheck) {
             $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl -SkipCertificateCheck
         }
@@ -61,24 +64,34 @@ function ReceiveWebDavItem_WalkTree {
     process {
         foreach ($item in $items) {
             # If an empty folder, then usually the first entry is the folder itself. Skip it.
-            $itemHref = $item.HREF.TrimEnd('/') + '/'
-            if ($itemHref -eq $normalizedCurrentUrl) {
-                Write-Verbose "Skipping self directory entry: $itemHref"
+            $itemHrefTrimmed = $item.Href.TrimEnd('/') + '/'
+            $itemUrlHrefTrimmed = $authorityUri + $itemHrefTrimmed
+            $CurrentUrlTrimmed = $CurrentUrl.TrimEnd('/') + '/'
+            if ($itemUrlHrefTrimmed -eq $CurrentUrlTrimmed) {
+                Write-Verbose "Skipping self directory entry: $itemUrlHrefTrimmed"
                 continue
-            } # if ($itemHref -eq $normalizedCurrentUrl) {
+            }
 
-            $name = $item.Name.Split('/') | Select-Object -Last 1; # Name: Jobs/Resumes
+            # Determine local target path
+            $relativeHref = $item.Href.TrimEnd('/')
+            $name = Split-Path $relativeHref -Leaf
             $localTarget = Join-Path $CurrentLocalPath $name
-            $isDir = $item.Length -eq 0 -and $item.Type -eq 'Directory'                
+            
+            # Determine if item is a directory
+            $isDir = $item.Type -eq 'Directory'                
                 
             if ($isDir) {
-                $dirUrl = ($CurrentUrl.TrimEnd('/') + '/' + $name + '/')
+                $hrefTrimmed = $item.Href.TrimEnd('/') + '/';
+                $dirUrl = $authorityUri + $hrefTrimmed
                 Write-Verbose "Entering directory: $dirUrl" 
                 if ($SkipCertificateCheck) {
                     Write-Verbose "Skipping certificate check for directory creation: $localTarget"
+                    # Create directory locally with ReceiveWebDavItem_DownloadItem
                     ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential -SkipCertificateCheck
                 }
                 else {
+                    # Create directory locally with ReceiveWebDavItem_DownloadItem -IsDirectory $true will check and then create if needed
+                    Write-Verbose "Creating directory without skipping certificate check: $localTarget"
                     ReceiveWebDavItem_DownloadItem -ItemUrl $dirUrl -TargetPath $localTarget -IsDirectory $true -CloudCredential $CloudCredential
                 }
             
@@ -103,6 +116,7 @@ function ReceiveWebDavItem_WalkTree {
             
                 }
                 else {
+                    Write-Verbose "Downloading file without skipping certificate check: $localTarget"
                     ReceiveWebDavItem_DownloadItem -ItemUrl $fileUrl -TargetPath $localTarget -IsDirectory $false -CloudCredential $CloudCredential
             
                 }
@@ -112,3 +126,5 @@ function ReceiveWebDavItem_WalkTree {
     } # process{
     end {}
 } # function ReceiveWebDavItem_WalkTree {
+
+ReceiveWebDavItem_WalkTree -CurrentUrl https://files.thekozanos.com/remote.php/dav/files/Lee/WebDavadoo/ -CurrentLocalPath /tmp/testWebDav/ -Recurse -Verbose

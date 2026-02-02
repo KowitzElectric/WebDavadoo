@@ -78,6 +78,7 @@
         "Move-WebDavItem",
         "New-WebDavDirectory",
         "Receive-WebDavItem",
+        "ReceiveWebDavItem_WalkTree",
         "Remove-WebDavCredential",
         "Remove-WebDavItem",
         "Send-ItemToWebDav",

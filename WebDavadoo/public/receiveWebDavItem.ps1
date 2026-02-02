@@ -36,11 +36,17 @@ function Receive-WebDavItem {
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
-        [switch]$SkipCertificateCheck = $false,
+        [switch]
+        $ShowResult = $false,
 
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 4)]
+        [switch]$SkipCertificateCheck = $false,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 5)]
         [System.Management.Automation.PSCredential]
         $cloudCredential = $script:WebDavCredential
     )
@@ -62,61 +68,62 @@ function Receive-WebDavItem {
     } # begin {
 
     process {
-        # If not a directory, just download the single file
-        $itemProps = Get-WebDavItemProperty `
-            -WebDavUrl $WebDavUrl `
-            -SkipCertificateCheck:$SkipCertificateCheck `
-            -CloudCredential $CloudCredential
+        # If not receiving a directory, then just download the single file
+        $paramsItemProps = @{
+            WebDavUrl       = $WebDavUrl
+            CloudCredential = $CloudCredential
+        }
+        if ($SkipCertificateCheck) {
+            $paramsItemProps.Add("SkipCertificateCheck", $true)
+        } # if ($SkipCertificateCheck) {
+        
+        try {
+            $itemProps = Get-WebDavItemProperty @paramsItemProps
+        }
+        catch {
+            Write-Error "Failed to get item properties: $_"
+            return
+        } # catch {
 
         $isDirectory = $itemProps.ContentType -eq 'directory'
         if (-not $isDirectory) {
             $fileName = Split-Path $WebDavUrl -Leaf
             $target = Join-Path $LocalPath $fileName
 
-            if ($SkipCertificateCheck) {
-                Write-Verbose "Skipping certificate check. Downloading file $WebDavUrl to $target"
-                ReceiveWebDavItem_DownloadItem `
-                    -ItemUrl $WebDavUrl `
-                    -TargetPath $target `
-                    -IsDirectory $false `
-                    -CloudCredential $CloudCredential `
-                    -SkipCertificateCheck:$SkipCertificateCheck
-
-                return
+            $paramsReceiveWebDavItem_DownloadItem = @{
+                ItemUrl         = $WebDavUrl
+                TargetPath      = $target
+                IsDirectory     = $false
+                CloudCredential = $CloudCredential
             }
-            else {
-                Write-Verbose "Downloading file $WebDavUrl to $target"
-                ReceiveWebDavItem_DownloadItem `
-                    -ItemUrl $WebDavUrl `
-                    -TargetPath $target `
-                    -IsDirectory $false `
-                    -CloudCredential $CloudCredential `
+            if ($SkipCertificateCheck) {
+                $paramsReceiveWebDavItem_DownloadItem.Add("SkipCertificateCheck", $true)
+            } # if ($SkipCertificateCheck) {
+            try {
+                ReceiveWebDavItem_DownloadItem @paramsReceiveWebDavItem_DownloadItem
+            } # try {
+            catch {
+                Write-Error "Failed to receive item: $_"
+            } # catch {
+            return
 
-                return
-
-            } # else {
-        } # if(-not $isDirectory) {
+        } # if(-not $isDirectory) { 
 
         # Otherwise, walk the tree
+        $paramsReceiveWebDavItem_WalkTree = @{
+            CurrentUrl       = $WebDavUrl
+            CurrentLocalPath = $LocalPath
+            CloudCredential  = $CloudCredential
+        }
+        if ($Recurse) {
+            $paramsReceiveWebDavItem_WalkTree.Add("Recurse", $true)
+        } # if ($Recurse) {
         if ($SkipCertificateCheck) {
-            Write-Verbose "Skipping certificate check. Receiving WebDAV items from $WebDavUrl to $LocalPath"
-            if ($Recurse) {
-                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recurse -CloudCredential $CloudCredential -SkipCertificateCheck
-            }
-            else {
-                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -CloudCredential $CloudCredential -SkipCertificateCheck
-            }
+            $paramsReceiveWebDavItem_WalkTree.Add("SkipCertificateCheck", $true)
         } # if ($SkipCertificateCheck) {
-        else {
-            Write-Verbose "Receiving WebDAV items from $WebDavUrl to $LocalPath"
-            if ($Recurse) {
-                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -Recurse -CloudCredential $CloudCredential
-            }
-            else {
-                ReceiveWebDavItem_WalkTree -CurrentUrl $WebDavUrl -CurrentLocalPath $LocalPath -CloudCredential $CloudCredential
-            }
-        } # else {
-    }
+        ReceiveWebDavItem_WalkTree @paramsReceiveWebDavItem_WalkTree
+
+    } # process {
 
     end {
         Write-Verbose "Receive-WebDavItem completed"
