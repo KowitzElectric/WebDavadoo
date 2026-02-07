@@ -52,10 +52,13 @@ function Receive-WebDavItem {
     )
 
     begin {
-        if (-not $CloudCredential) {
-            throw "No WebDAV credential found. Run Set-WebDavCredential first."
-        }
+        if ($PSVersionTable.PSVersion.Major -lt 7) {
+            Write-Error "This script requires PowerShell 7+"
+            exit 1
+        } # if ($PSVersionTable.PSVersion.Major -lt 7) {
+        Write-Verbose "Starting Receive-WebDavItem for $WebDavUrl to $LocalPath"
 
+        # dot source the helper functions
         . "$script:PSScriptRootPrivate\receiveWebDavItem_DownloadItem.ps1"
         . "$script:PSScriptRootPrivate\receiveWebDavItem_WalkTree.ps1"
 
@@ -63,6 +66,9 @@ function Receive-WebDavItem {
         if (-not (Test-Path $LocalPath)) {
             Write-Verbose "Creating local directory: $LocalPath"
             New-Item -ItemType Directory -Path $LocalPath | Out-Null
+        }
+        else {
+            Write-Verbose "Local directory already exists: $LocalPath"
         }
 
     } # begin {
@@ -77,6 +83,7 @@ function Receive-WebDavItem {
             $paramsItemProps.Add("SkipCertificateCheck", $true)
         } # if ($SkipCertificateCheck) {
         
+        Write-Verbose "Getting item properties for: $WebDavUrl"
         try {
             $itemProps = Get-WebDavItemProperty @paramsItemProps
         }
@@ -87,6 +94,7 @@ function Receive-WebDavItem {
 
         $isDirectory = $itemProps.ContentType -eq 'directory'
         if (-not $isDirectory) {
+            Write-Verbose "Receiving single file: $WebDavUrl"
             $fileName = Split-Path $WebDavUrl -Leaf
             $target = Join-Path $LocalPath $fileName
 
@@ -110,6 +118,7 @@ function Receive-WebDavItem {
         } # if(-not $isDirectory) { 
 
         # Otherwise, walk the tree
+        Write-Verbose "Receiving directory tree from: $WebDavUrl"
         $paramsReceiveWebDavItem_WalkTree = @{
             CurrentUrl       = $WebDavUrl
             CurrentLocalPath = $LocalPath
@@ -126,6 +135,13 @@ function Receive-WebDavItem {
     } # process {
 
     end {
-        Write-Verbose "Receive-WebDavItem completed"
+        $downloadedFile = Join-Path $LocalPath (Split-Path $WebDavUrl -Leaf)
+        Write-Verbose "Completed Receive-WebDavItem for $WebDavUrl to $LocalPath"
+        $downloadStatus = Get-ChildItem -Path $downloadedFile -ErrorAction SilentlyContinue
+        Write-Verbose "Download status: $downloadStatus"
+        Write-Verbose "ShowResult is set to: $ShowResult"
+        if ($downloadStatus -and $ShowResult) {
+            Write-Output "Downloaded $WebDavUrl to: $downloadedFile"
+        } # if ($downloadStatus -and $ShowResult) {
     }
 } # function Receive-WebDavItem {

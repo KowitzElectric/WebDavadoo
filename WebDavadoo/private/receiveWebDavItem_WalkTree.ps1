@@ -60,6 +60,9 @@ function ReceiveWebDavItem_WalkTree {
         else {
             $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl
         }
+
+        $itemsCount = $items.Count
+        Write-Verbose "Found $itemsCount items at $CurrentUrl"
     } # begin{
     process {
         foreach ($item in $items) {
@@ -127,4 +130,4 @@ function ReceiveWebDavItem_WalkTree {
     end {}
 } # function ReceiveWebDavItem_WalkTree {
 
-ReceiveWebDavItem_WalkTree -CurrentUrl https://files.thekozanos.com/remote.php/dav/files/Lee/WebDavadoo/ -CurrentLocalPath /tmp/testWebDav/ -Recurse -Verbose
+#ReceiveWebDavItem_WalkTree -CurrentUrl https://files.thekozanos.com/remote.php/dav/files/Lee/WebDavadoo/ -CurrentLocalPath /tmp/testWebDav/ -Recurse -Verbose

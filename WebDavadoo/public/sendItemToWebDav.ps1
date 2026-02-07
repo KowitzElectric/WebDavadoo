@@ -5,23 +5,19 @@
     This function uploads files to a cloud file server using WebDav.
 .PARAMETER webDavUrl
     The webdav url you can get from the settings of the cloud file server.
-.PARAMETER directory
-    The directory on the cloud file server to upload to.
+
 .PARAMETER inputFilePath
     The path to the file you want to upload.
 .PARAMETER cloudCredential
     Use this to log into the cloud server webdav.
 .EXAMPLE
-Send-ItemToWedDav -webDavUrl https://cloud.example.com/ownext/remote.php/dav/files/jgalt/ -inputFilePath C:\path\to\file.ps1 -directory Folder1/subFolder2
-Sends the file file.ps1 to the Folder1/subFolder2 directory on the cloud file server.
-.EXAMPLE
-Send-ItemToWedDav -webDavUrl "https://cloud.example.com/ownext/remote.php/dav/files/jgalt" -inputFilePath C:\temp\testfile.txt -Verbose
+Send-ItemToWebDav -webDavUrl "https://cloud.example.com/ownext/remote.php/dav/files/jgalt" -inputFilePath C:\temp\testfile.txt -Verbose
 Sends the file testfile.txt to the root directory of the cloud file server with verbose output.
 .EXAMPLE
-Send-ItemToWedDav -webDavUrl 'https://cloud.example.com/ownext/remote.php/dav/files/jgalt/AppTroubleshooting' -inputFilePath C:\Users\ausername\Documents\ApplicationEventLog.evtx
+Send-ItemToWebDav -webDavUrl 'https://cloud.example.com/ownext/remote.php/dav/files/jgalt/AppTroubleshooting' -inputFilePath C:\Users\ausername\Documents\ApplicationEventLog.evtx
 
 #>
-function Send-ItemToWedDav {
+function Send-ItemToWebDav {
     [CmdletBinding()]
     [Alias()]
     [OutputType([int])]
@@ -33,13 +29,6 @@ function Send-ItemToWedDav {
             Position = 0)]
         [string]
         $webDavUrl,
-    
-        # The directory on the cloud file server to upload to.
-        [Parameter(Mandatory = $false,
-            ValueFromPipelineByPropertyName = $true,
-            Position = 1)]
-        [string]
-        $directory,
 
         # The path to the file you want to upload.
         [Parameter(Mandatory = $false,
@@ -48,17 +37,23 @@ function Send-ItemToWedDav {
         [string]
         $inputFilePath,
 
-        # Skip certificate check.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
+        [switch]
+        $ShowResult = $false,
+
+        # Skip certificate check.
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
         [switch]
         $skipCertificateCheck,
 
         # Use this to log into the cloud server webdav.
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
-            Position = 4)]
+            Position = 5)]
         #[securestring]
         [System.Management.Automation.PSCredential]$cloudCredential = $script:WebDavCredential
     )
@@ -68,37 +63,43 @@ function Send-ItemToWedDav {
             Write-Error "This script requires PowerShell 7+"
             exit 1
         } # if ($PSVersionTable.PSVersion.Major -lt 7) {
+        Write-Verbose "Starting Send-ItemToWebDav for $inputFilePath to $webDavUrl"
+        # always ensure the webdav url ends with a slash to avoid confusion between file and directory urls
+        $webDavUrl = $webDavUrl.TrimEnd('/') + '/'
 
         $inputFileItem = Get-ChildItem -Path $inputFilePath;
         $fileName = $inputFileItem.Name;
-        $directoryPlusBase = $webDavUrl + $directory
-        $uri = $directoryPlusBase + $fileName
+        #$directoryPlusBase = $webDavUrl + $directory
+        $uri = $webDavUrl + $fileName
         Write-Verbose "URI: $uri"
     }
     Process {
+        $paramsSendItemToWebDav = @{
+            Uri        = $uri
+            InFile     = $inputFilePath
+            Credential = $cloudCredential
+            Method     = 'Put'
+        }
         if ($skipCertificateCheck) {
-            Write-Verbose "Skipping certificate check."
-            try {
-                $response = Invoke-WebRequest -uri $uri -Method Put -Infile $inputFilePath -Credential $cloudCredential -SkipCertificateCheck
-            }
-            catch {
-                Write-Error "Failed to upload file: $_"
-            }
+            $paramsSendItemToWebDav.Add("SkipCertificateCheck", $true)
+        } # if ($skipCertificateCheck) {
+        try {
+            $response = Invoke-WebRequest @paramsSendItemToWebDav
+            Write-Verbose "Successfully uploaded file: $inputFilePath to $uri"
         }
-        else {
-            try {
-                $response = Invoke-WebRequest -uri $uri -Method Put -Infile $inputFilePath -Credential $cloudCredential
-            }
-            catch {
-                Write-Error "Failed to upload file: $_"
-            }
+        catch {
+            Write-Error "Failed to upload file: $_"
         }
+
         $statusCode = $response.statusCode
         
     } # Process
     End {
-        if ($statusCode -eq '201') {
-            Write-Verbose "File: $inputFilePath uploaded successfully to $uri"
+        if ($statusCode -eq '201' -and $ShowResult) {
+            Write-Output "Upload successful:  File: $inputFilePath uploaded to $uri"
+        }
+        elseif ($statusCode -ne '201' -and $ShowResult) {
+            Write-Error "Upload failed with status code: $statusCode"
         }
     } # End
 }

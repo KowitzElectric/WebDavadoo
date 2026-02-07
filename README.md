@@ -85,7 +85,7 @@ Download a file:
 Receive-WebDavItem -WebDavUrl "https://cloud.example.com/.../Folder1" -LocalPath "C:\Temp"
 
 Upload a file:
-Send-ToWebDav -LocalPath "/home/jgalt/Documents/Lexico-ProsodicConvergenceandAcousticIdentity.docx" -WebDavUrl "https://cloud.example.com/.../Docs"
+Send-ItemToWebDav -LocalPath "/home/jgalt/Documents/Lexico-ProsodicConvergenceandAcousticIdentity.docx" -WebDavUrl "https://cloud.example.com/.../Docs"
 
 Move a file:
 Move-WebDavItem -WebDavUrlOfFile https://cloud.example.com/remote.php/dav/files/jgalt/newfile.md -DestinationWebDavUrlOfFile https://files.thekozanos.com/remote.php/dav/files/jgalt/TextFile5.md
