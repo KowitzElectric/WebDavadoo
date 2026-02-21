@@ -101,6 +101,37 @@ Move-WebDavItem -WebDavUrlOfFile https://cloud.example.com/remote.php/dav/files/
 
 ---
 
+## Maintenance Policy
+
+This project is maintained by a single author and supported on a best-effort basis.
+
+### Scope
+
+- The primary goal of this repository is to provide practical WebDAV workflows in PowerShell.
+- Changes should align with that objective.
+- Large architectural rewrites or feature expansions outside the core scope are unlikely to be accepted.
+
+### Review Process
+
+- Pull requests should be focused, well-scoped, and clearly explain the rationale for the change.
+- Behavioral changes should describe expected before/after impact.
+- The maintainer may request revisions prior to review.
+- Not all submissions will be merged.
+
+### Quality Expectations
+
+- Follow PowerShell best practices (approved verbs, pipeline support where appropriate, comment-based help, consistent formatting).
+- Avoid stylistic-only refactors unless they resolve a concrete issue.
+- Changes that increase long-term maintenance complexity may be declined.
+
+### Time Commitment
+
+- Issues and pull requests are reviewed as time permits.
+- There is no guaranteed response time.
+- Inactive or incomplete submissions may be closed.
+
+---
+
 ## License
 
 [LICENSE](https://github.com/KowitzElectric/WebDavadoo/blob/main/LICENSE)

@@ -81,6 +81,7 @@
         "ReceiveWebDavItem_WalkTree",
         "ReceiveWebDavItem_ShowResult",
         "ReceiveWebDavItem_DownloadItem",
+        "Receive-WebDavItem_TestUri",
         "Remove-WebDavCredential",
         "Remove-WebDavItem",
         "Send-ItemToWebDav",
