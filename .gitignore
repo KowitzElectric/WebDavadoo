@@ -4,4 +4,4 @@
 
 # Local integration tests (self-hosted WebDAV)
 realWorldTests.ps1
-testresults.xml
+testResults.xml
