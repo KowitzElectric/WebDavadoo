@@ -32,20 +32,28 @@ function ReceiveWebDavItem_DownloadItem {
             Position = 2)]
         [bool]
         $IsDirectory,
-        
+
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             Position = 3)]
+        [switch]
+        $ShowResult = $false,
+        
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 4)]
         [switch]
         $SkipCertificateCheck = $false,
         
         [Parameter(Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
-            Position = 4)]
+            Position = 5)]
         [System.Management.Automation.PSCredential]
         $CloudCredential = $script:WebDavCredential
     )
-    begin {}
+    begin {
+        Write-Verbose "Starting ReceiveWebDavItem_DownloadItem for $ItemUrl to $TargetPath. IsDirectory: $IsDirectory"
+    }
     process {
         if ($IsDirectory) {
             if (-not (Test-Path $TargetPath)) {
@@ -55,35 +63,33 @@ function ReceiveWebDavItem_DownloadItem {
         }
         else {
             Write-Verbose "Downloading $ItemUrl -> $TargetPath"
+            $paramsReceiveWebDavItem_DownloadItem = @{
+                Uri            = $ItemUrl
+                Outfile        = $TargetPath
+                Authentication = 'Basic'
+                Credential     = $CloudCredential
+                ErrorAction    = 'Stop'
+            }
             if ($SkipCertificateCheck) {
-                try {
-                    Invoke-WebRequest `
-                        -Uri $ItemUrl `
-                        -OutFile $TargetPath `
-                        -Authentication Basic `
-                        -Credential $CloudCredential `
-                        -SkipCertificateCheck `
-                        -ErrorAction Stop
-                }
-                catch {
-                    Write-Error "Failed to download file: $_"
-                }
-                return
+                $paramsReceiveWebDavItem_DownloadItem.Add("SkipCertificateCheck", $true)
+            } # if ($SkipCertificateCheck) {
+
+            try {
+                Write-Verbose "Invoking web request with parameters: $($paramsReceiveWebDavItem_DownloadItem | Out-String) in ReceiveWebDavItem_DownloadItem"
+                Invoke-WebRequest @paramsReceiveWebDavItem_DownloadItem
+                Write-Verbose "Successfully downloaded file: $ItemUrl to $TargetPath"
             }
-            else {
-                try {
-                    Invoke-WebRequest `
-                        -Uri $ItemUrl `
-                        -OutFile $TargetPath `
-                        -Authentication Basic `
-                        -Credential $CloudCredential `
-                        -ErrorAction Stop
-                }
-                catch {
-                    Write-Error "Failed to download file: $_"
-                }
+            catch {
+                Write-Error "Failed to download file: $_"
             }
+            #return
+           
         }
     } # process{
-    end {}
+    end {
+        if ($ShowResult) {
+            Write-Verbose "ShowResult is set to: $ShowResult in ReceiveWebDavItem_DownloadItem."
+            ReceiveWebDavItem_ShowResult -WebDavUrl $ItemUrl -LocalPath $TargetPath 
+        } # if ($ShowResult) {
+    }
 } # function ReceiveWebDavItem_DownloadItem {

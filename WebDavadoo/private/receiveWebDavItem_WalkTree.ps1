@@ -50,10 +50,10 @@ function ReceiveWebDavItem_WalkTree {
     begin {
         # Normalize CurrentUrl for comparison.  This ensures it ends with a slash by removing any trailing slashes and adding one.
         $currentUrl = $CurrentUrl.TrimEnd('/') + '/'
+        Write-Verbose "Processing URL: $currentUrl"
         # Create a URI object for CurrentUrl
         $baseuri = [uri]$CurrentUrl
         $authorityUri = "{0}://{1}" -f $baseUri.Scheme, $baseUri.Authority
-        
         if ($SkipCertificateCheck) {
             $items = Get-WebDavChildItem -WebDavUrl $CurrentUrl -SkipCertificateCheck
         }
@@ -63,16 +63,41 @@ function ReceiveWebDavItem_WalkTree {
 
         $itemsCount = $items.Count
         Write-Verbose "Found $itemsCount items at $CurrentUrl"
+        Write-Verbose "Items: $($items | ForEach-Object { $_.Href })"
     } # begin{
     process {
         foreach ($item in $items) {
+            # test if is absoluteuri and if so, extract scheme, authority, path and query.  This is needed to compare with CurrentUrl and to construct full URLs for items.
+            $absoluteUriTest = receiveWebDavItem_TestUri -uriString $item.Href
+            if ($absoluteUriTest.IsAbsoluteUri -eq $true) {
+                Write-Verbose "Item Href is absolute URI: $($item.Href)"
+                $itemHrefTrimmed = $item.Href.TrimEnd('/') + '/'
+                <# $itemScheme = $absoluteUriTest.Scheme
+                $itemAuthority = $absoluteUriTest.Authority
+                $itemPathAndQuery = $absoluteUriTest.PathAndQuery
+                $itemFullUrl = "{0}://{1}{2}" -f $itemScheme, $itemAuthority, $itemPathAndQuery
+                Write-Verbose "Constructed full URL from item Href: $itemFullUrl" #>
+            }
+            else {
+                Write-Verbose "Item Href is not absolute URI: $($item.Href)"
+                $itemHrefTrimmed = $authorityUri + $item.Href.TrimEnd('/') + '/'
+                Write-Verbose "Constructed full URL from authority and item Href: $itemHrefTrimmed"
+            }
             # If an empty folder, then usually the first entry is the folder itself. Skip it.
-            $itemHrefTrimmed = $item.Href.TrimEnd('/') + '/'
-            $itemUrlHrefTrimmed = $authorityUri + $itemHrefTrimmed
+            
+            
             $CurrentUrlTrimmed = $CurrentUrl.TrimEnd('/') + '/'
-            if ($itemUrlHrefTrimmed -eq $CurrentUrlTrimmed) {
-                Write-Verbose "Skipping self directory entry: $itemUrlHrefTrimmed"
+
+
+            if ($itemHrefTrimmed -eq $CurrentUrlTrimmed) {
+                Write-Verbose "Skipping self directory entry: $itemHrefTrimmed"
                 continue
+            }
+            else {
+                Write-Verbose "Processing item: $itemHrefTrimmed"
+                Write-Verbose "CurrentUrl: $CurrentUrlTrimmed"
+                Write-Verbose "Item Href: $item.Href"
+                Write-Verbose "Item Type: $item.Type"
             }
 
             # Determine local target path
@@ -84,8 +109,8 @@ function ReceiveWebDavItem_WalkTree {
             $isDir = $item.Type -eq 'Directory'                
                 
             if ($isDir) {
-                $hrefTrimmed = $item.Href.TrimEnd('/') + '/';
-                $dirUrl = $authorityUri + $hrefTrimmed
+                #$hrefTrimmed = $item.Href.TrimEnd('/') + '/';
+                $dirUrl = $itemHrefTrimmed
                 Write-Verbose "Entering directory: $dirUrl" 
                 if ($SkipCertificateCheck) {
                     Write-Verbose "Skipping certificate check for directory creation: $localTarget"

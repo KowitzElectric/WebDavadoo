@@ -61,6 +61,8 @@ function Receive-WebDavItem {
         # dot source the helper functions
         . "$script:PSScriptRootPrivate\receiveWebDavItem_DownloadItem.ps1"
         . "$script:PSScriptRootPrivate\receiveWebDavItem_WalkTree.ps1"
+        . "$script:PSScriptRootPrivate\receiveWebDavItem_ShowResult.ps1"
+        . "$script:PSScriptRootPrivate\receiveWebDavItem_TestUri.ps1"
 
         # Ensure local root exists
         if (-not (Test-Path $LocalPath)) {
@@ -107,6 +109,10 @@ function Receive-WebDavItem {
             if ($SkipCertificateCheck) {
                 $paramsReceiveWebDavItem_DownloadItem.Add("SkipCertificateCheck", $true)
             } # if ($SkipCertificateCheck) {
+            if ($ShowResult) {
+                $paramsReceiveWebDavItem_DownloadItem.Add("ShowResult", $true)
+            } # if ($ShowResult) {
+
             try {
                 ReceiveWebDavItem_DownloadItem @paramsReceiveWebDavItem_DownloadItem
             } # try {
@@ -135,13 +141,11 @@ function Receive-WebDavItem {
     } # process {
 
     end {
-        $downloadedFile = Join-Path $LocalPath (Split-Path $WebDavUrl -Leaf)
-        Write-Verbose "Completed Receive-WebDavItem for $WebDavUrl to $LocalPath"
-        $downloadStatus = Get-ChildItem -Path $downloadedFile -ErrorAction SilentlyContinue
-        Write-Verbose "Download status: $downloadStatus"
-        Write-Verbose "ShowResult is set to: $ShowResult"
-        if ($downloadStatus -and $ShowResult) {
-            Write-Output "Downloaded $WebDavUrl to: $downloadedFile"
-        } # if ($downloadStatus -and $ShowResult) {
+        <# if ($ShowResult) {
+            Write-Verbose "ShowResult is set to: $ShowResult"
+            ReceiveWebDavItem_ShowResult -WebDavUrl $WebDavUrl -LocalPath $LocalPath 
+        } # if ($ShowResult) { #>
     }
 } # function Receive-WebDavItem {
+
+#Receive-WebDavItem -WebDavUrl https://192.168.122.160/WebDavadoo -LocalPath /tmp/testWebDav/  -Recurse -ShowResult -SkipCertificateCheck -Verbose

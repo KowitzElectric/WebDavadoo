@@ -1,6 +1,8 @@
 <#
 .SYNOPSIS
-    Retrieves WebDAV quota information (used and available space).
+    Retrieves WebDAV quota information (used and available space).  This is not supported in IIS.  IIS is quota-unaware. 
+    It serves files from the NTFS file system, but its WebDAV module doesn't bridge the gap between the Windows File Server 
+    Resource Manager (FSRM) and the WebDAV XML response.
 
 .PARAMETER WebDavUrl
     Full WebDAV URL of the root directory.
@@ -40,15 +42,7 @@ function Get-WebDavQuota {
         
     }
     
-    process {
-
-        <#         if ($skipCertificateCheck) {
-            $resp = Invoke-WebRequest -Uri $WebDavUrl -CustomMethod PROPFIND -Headers @{ Depth = "0" } -Authentication Basic -Credential $CloudCredential -SkipCertificateCheck
-        }
-        else {
-            $resp = Invoke-WebRequest -Uri $WebDavUrl -CustomMethod PROPFIND -Headers @{ Depth = "0" } -Authentication Basic -Credential $CloudCredential
-        } #>
-        
+    process {        
         $body = @'
 <?xml version="1.0" encoding="utf-8" ?>
 <D:propfind xmlns:D="DAV:">
@@ -58,40 +52,28 @@ function Get-WebDavQuota {
   </D:prop>
 </D:propfind>
 '@
-        if ($skipCertificateCheck) {
-            try {
-                $resp = Invoke-WebRequest `
-                    -Uri $WebDavUrl `
-                    -CustomMethod PROPFIND `
-                    -Headers @{ Depth = "0" } `
-                    -Body $body `
-                    -ContentType 'application/xml' `
-                    -Authentication Basic `
-                    -Credential $CloudCredential `
-                    -SkipCertificateCheck
-            }
-            catch {
-                Write-Error "Error retrieving quota information: $_"
-                return
-            }
+        $paramsGetWebDavQuota = @{
+            Uri            = $WebDavUrl
+            CustomMethod   = 'PROPFIND'
+            Headers        = @{ Depth = "0" }
+            Body           = $body
+            ContentType    = 'application/xml'
+            Authentication = 'Basic'
+            Credential     = $CloudCredential
         }
-        else {
-            try {
-                $resp = Invoke-WebRequest `
-                    -Uri $WebDavUrl `
-                    -CustomMethod PROPFIND `
-                    -Headers @{ Depth = "0" } `
-                    -Body $body `
-                    -ContentType 'application/xml' `
-                    -Authentication Basic `
-                    -Credential $CloudCredential
-            } # try
-            catch {
-                Write-Error "Error retrieving quota information: $_"
-                return
-            } # catch
-        } # else
 
+        if ($skipCertificateCheck) {
+            $paramsGetWebDavQuota['SkipCertificateCheck'] = $true
+        }
+        
+        try {
+            $resp = Invoke-WebRequest @paramsGetWebDavQuota -ErrorAction Stop
+        }
+        catch {
+            Write-Error "Error retrieving quota information: $_"
+            return
+        }
+        
         [xml]$xml = $resp.Content
         $prop = $xml.multistatus.response.propstat.prop
 
