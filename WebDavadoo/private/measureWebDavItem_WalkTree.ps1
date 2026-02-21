@@ -19,7 +19,7 @@ function MeasureWebDavItem_WalkTree {
         $SkipCertificateCheck = $false
     )
     begin {
-        # Get the Base Server URL (e.g., https://files.thekozanos.com)
+        # Get the Base Server URL
         $uriObj = [Uri]$Url
         $baseUrl = "{0}://{1}" -f $uriObj.Scheme, $uriObj.Host
 

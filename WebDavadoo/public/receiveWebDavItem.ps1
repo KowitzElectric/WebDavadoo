@@ -147,5 +147,3 @@ function Receive-WebDavItem {
         } # if ($ShowResult) { #>
     }
 } # function Receive-WebDavItem {
-
-#Receive-WebDavItem -WebDavUrl https://192.168.122.160/WebDavadoo -LocalPath /tmp/testWebDav/  -Recurse -ShowResult -SkipCertificateCheck -Verbose

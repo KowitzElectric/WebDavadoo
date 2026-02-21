@@ -154,5 +154,3 @@ function ReceiveWebDavItem_WalkTree {
     } # process{
     end {}
 } # function ReceiveWebDavItem_WalkTree {
-
-#ReceiveWebDavItem_WalkTree -CurrentUrl https://files.thekozanos.com/remote.php/dav/files/Lee/WebDavadoo/ -CurrentLocalPath /tmp/testWebDav/ -Recurse -Verbose
