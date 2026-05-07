@@ -79,4 +79,22 @@ Describe "Get-WebDavChildItem" {
       $result.ContentType   | Should -Be 'text/plain'
     } # InModuleScope WebDavadoo {
   } # It 'accepts WebDavUrl from pipeline' {
+
+  It "returns file info when pointed directly at a file" {
+    InModuleScope WebDavadoo {
+      Mock Invoke-RestMethod -ModuleName WebDavadoo {
+        return [xml]@"
+<?xml version="1.0" encoding="utf-8"?><D:multistatus xmlns:D="DAV:"><D:response><D:href>https://example.com/webdav/testfile.txt</D:href><D:propstat><D:status>HTTP/1.1 200 OK</D:status><D:prop><D:getcontenttype>text/plain</D:getcontenttype><D:getlastmodified>Mon, 05 Jan 2026 07:20:43 GMT</D:getlastmodified><D:lockdiscovery/><D:ishidden>0</D:ishidden><D:supportedlock/><D:getetag>"985298cd137edc1:0"</D:getetag><D:displayname>testfile.txt</D:displayname><D:getcontentlength>3712</D:getcontentlength><D:iscollection>0</D:iscollection><D:creationdate>2026-01-07T04:40:13.895Z</D:creationdate><D:resourcetype/></D:prop></D:propstat></D:response></D:multistatus>
+"@
+      } # Mock Invoke-RestMethod
+
+      $result = Get-WebDavChildItem -WebDavUrl "https://example.com/webdav/testfile.txt" -CloudCredential $TestCredential
+
+      $result.Name        | Should -Be 'testfile.txt'
+      $result.Type        | Should -Be 'File'
+      $result.Length      | Should -Be 3712
+      $result.ContentType | Should -Be 'text/plain'
+    }
+  } # It "returns file info when pointed directly at a file"
+
 } # Describe

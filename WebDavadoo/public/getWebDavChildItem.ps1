@@ -68,25 +68,41 @@ function Get-WebDavChildItem {
 
         $allResponses = @($response.multistatus.response)
         $selfHref     = $allResponses[0].href
-        $basePath     = ($selfHref -replace '/[^/]+/?$', '/')
+
+        # Single file targeted directly — emit it with the same shape as directory children
+        if ($allResponses.Count -eq 1 -and $null -eq $allResponses[0].propstat.prop.resourcetype.collection) {
+            $entry           = $allResponses[0]
+            $lastModifiedRaw = $entry.propstat.prop.getlastmodified
+            $lengthRaw       = $entry.propstat.prop.getcontentlength
+            return [pscustomobject]@{
+                HREF          = $entry.href
+                Name          = $selfHref.TrimEnd('/').Split('/')[-1]
+                DisplayName   = $entry.propstat.prop.displayname
+                Type          = 'File'
+                LastWriteTime = if ($lastModifiedRaw) { [datetime]$lastModifiedRaw } else { $null }
+                Length        = if ($lengthRaw) { [int64]$lengthRaw } else { 0 }
+                ContentType   = $entry.propstat.prop.getcontenttype
+            }
+        }
+
+        $basePath = ($selfHref -replace '/[^/]+/?$', '/')
 
         $allResponses |
         Where-Object { $_.href -ne $selfHref } |
         ForEach-Object {
 
-            $lastModifiedRaw = $_.propstat.prop.getlastmodified;
-            $lengthRaw = $_.propstat.prop.getcontentlength;
+            $lastModifiedRaw = $_.propstat.prop.getlastmodified
+            $lengthRaw       = $_.propstat.prop.getcontentlength
 
             [pscustomobject]@{
                 HREF          = $_.href
-                #Name          = $_.href.Substring($basePath.Length).TrimEnd('/')
-                Name          = if ($_.href.Length -gt $basePath.Length) { $_.href.Substring($basePath.Length).TrimEnd('/') }else { $_.href.TrimEnd('/') }
+                Name          = if ($_.href.Length -gt $basePath.Length) { $_.href.Substring($basePath.Length).TrimEnd('/') } else { $_.href.TrimEnd('/') }
                 DisplayName   = $_.propstat.prop.displayname
                 Type          = if ($null -ne $_.propstat.prop.resourcetype.collection) { 'Directory' } else { 'File' }
                 LastWriteTime = if ($lastModifiedRaw) { [datetime]$lastModifiedRaw } else { $null }
                 Length        = if ($lengthRaw) { [int64]$lengthRaw } else { 0 }
                 ContentType   = $_.propstat.prop.getcontenttype
-            } # pscustomobject
+            }
         } # ForEach-Object
     } # process {
     
