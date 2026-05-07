@@ -66,10 +66,12 @@ function Get-WebDavChildItem {
             return
         }
 
-        $basePath = ($response.multistatus.response[0].href -replace '/[^/]+/?$', '/')
+        $allResponses = @($response.multistatus.response)
+        $selfHref     = $allResponses[0].href
+        $basePath     = ($selfHref -replace '/[^/]+/?$', '/')
 
-        $response.multistatus.response |
-        Where-Object { $_.href -ne $response.multistatus.response[0].href } |
+        $allResponses |
+        Where-Object { $_.href -ne $selfHref } |
         ForEach-Object {
 
             $lastModifiedRaw = $_.propstat.prop.getlastmodified;
