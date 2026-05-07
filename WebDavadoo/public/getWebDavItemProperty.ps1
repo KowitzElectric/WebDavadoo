@@ -40,46 +40,32 @@ function Get-WebDavItemProperty {
     } # begin {
 
     process {
+        $params = @{
+            Uri            = $WebDavUrl
+            CustomMethod   = 'PROPFIND'
+            Headers        = @{ Depth = "0" }
+            Authentication = 'Basic'
+            Credential     = $CloudCredential
+        }
         if ($skipCertificateCheck) {
             Write-Verbose "Skipping SSL certificate check."
-            try {
-                Write-Verbose "Requesting WebDAV properties for $WebDavUrl"
-                $resp = Invoke-WebRequest `
-                    -Uri $WebDavUrl `
-                    -CustomMethod PROPFIND `
-                    -Headers @{ Depth = "0" } `
-                    -Authentication Basic `
-                    -SkipCertificateCheck `
-                    -Credential $CloudCredential
-            }
-            catch {
-                Write-Error "Failed to get item properties: $_"
-                return
-            }
+            $params['SkipCertificateCheck'] = $true
         }
-        else {
-            try {
-                Write-Verbose "Requesting WebDAV properties for $WebDavUrl"
-                $resp = Invoke-WebRequest `
-                    -Uri $WebDavUrl `
-                    -CustomMethod PROPFIND `
-                    -Headers @{ Depth = "0" } `
-                    -Authentication Basic `
-                    -Credential $CloudCredential
-            }
-            catch {
-                Write-Error "Failed to get item properties: $_"
-                return
-            }
-        }
-        
 
         try {
-            [xml]$xml = $resp.Content
-            $prop = $xml.multistatus.response.propstat.prop
+            Write-Verbose "Requesting WebDAV properties for $WebDavUrl"
+            $resp = Invoke-RestMethod @params
+        }
+        catch {
+            Write-Error "Failed to get item properties: $_"
+            return
+        }
+
+        try {
+            $prop = $resp.multistatus.response.propstat.prop
 
             [pscustomobject]@{
-                Href            = $xml.multistatus.response.href
+                Href            = $resp.multistatus.response.href
                 ETag            = $prop.getetag
                 LastModified    = [datetime]$prop.getlastmodified
                 ContentType     = if ($prop.getcontenttype) { $prop.getcontenttype } else { "directory" }

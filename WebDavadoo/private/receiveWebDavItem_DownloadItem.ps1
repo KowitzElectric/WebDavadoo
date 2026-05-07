@@ -76,7 +76,7 @@ function ReceiveWebDavItem_DownloadItem {
 
             try {
                 Write-Verbose "Invoking web request with parameters: $($paramsReceiveWebDavItem_DownloadItem | Out-String) in ReceiveWebDavItem_DownloadItem"
-                Invoke-WebRequest @paramsReceiveWebDavItem_DownloadItem
+                Invoke-RestMethod @paramsReceiveWebDavItem_DownloadItem
                 Write-Verbose "Successfully downloaded file: $ItemUrl to $TargetPath"
             }
             catch {

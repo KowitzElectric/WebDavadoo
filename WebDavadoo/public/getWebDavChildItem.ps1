@@ -44,37 +44,32 @@ function Get-WebDavChildItem {
     } # begin {
     
     process {
+        $params = @{
+            Uri            = $webDavUrl
+            CustomMethod   = 'PROPFIND'
+            Headers        = @{ Depth = "1" }
+            Authentication = 'Basic'
+            Credential     = $cloudCredential
+        }
         if ($skipCertificateCheck) {
             Write-Verbose "Skipping certificate check for WebDAV request to '$webDavUrl'."
-            $response = Invoke-WebRequest `
-                -Uri $webDavUrl `
-                -CustomMethod PROPFIND `
-                -Headers @{ Depth = "1" } `
-                -Authentication Basic `
-                -Credential $cloudCredential `
-                -SkipCertificateCheck
+            $params['SkipCertificateCheck'] = $true
         }
         else {
             Write-Verbose "Performing WebDAV request to '$webDavUrl'."
-            $response = Invoke-WebRequest `
-                -Uri $webDavUrl `
-                -CustomMethod PROPFIND `
-                -Headers @{ Depth = "1" } `
-                -Authentication Basic `
-                -Credential $cloudCredential
         }
 
-        [xml]$xml = $response.Content
+        $response = Invoke-RestMethod @params
 
-        if (-not $xml.multistatus -or -not $xml.multistatus.response) {
+        if (-not $response.multistatus -or -not $response.multistatus.response) {
             Write-Verbose "No child items returned for $WebDavUrl"
             return
         }
 
-        $basePath = ($xml.multistatus.response[0].href -replace '/[^/]+/?$', '/')
+        $basePath = ($response.multistatus.response[0].href -replace '/[^/]+/?$', '/')
 
-        $xml.multistatus.response |
-        Where-Object { $_.href -ne $xml.multistatus.response[0].href } |
+        $response.multistatus.response |
+        Where-Object { $_.href -ne $response.multistatus.response[0].href } |
         ForEach-Object {
 
             $lastModifiedRaw = $_.propstat.prop.getlastmodified;

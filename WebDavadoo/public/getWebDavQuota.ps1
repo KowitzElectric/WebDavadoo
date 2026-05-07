@@ -67,15 +67,14 @@ function Get-WebDavQuota {
         }
         
         try {
-            $resp = Invoke-WebRequest @paramsGetWebDavQuota -ErrorAction Stop
+            $resp = Invoke-RestMethod @paramsGetWebDavQuota -ErrorAction Stop
         }
         catch {
             Write-Error "Error retrieving quota information: $_"
             return
         }
-        
-        [xml]$xml = $resp.Content
-        $prop = $xml.multistatus.response.propstat.prop
+
+        $prop = $resp.multistatus.response.propstat.prop
 
         [pscustomobject]@{
             UsedMB      = [math]::Round([int64]$prop.'quota-used-bytes' / 1MB, 2)

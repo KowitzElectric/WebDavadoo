@@ -47,100 +47,54 @@ function Test-WebDavItem {
         }
     } # begin {
     Process {
+        $params = @{
+            Uri            = $WebDavUrl
+            Method         = 'Head'
+            Authentication = 'Basic'
+            Credential     = $CloudCredential
+            ErrorAction    = 'Stop'
+        }
         if ($SkipCertificateCheck) {
-            try {
-                Invoke-WebRequest `
-                    -Uri $WebDavUrl `
-                    -Method Head `
-                    -Authentication Basic `
-                    -SkipCertificateCheck `
-                    -Credential $CloudCredential `
-                    -ErrorAction Stop | Out-Null
-        
-                Write-Verbose "HTTP 200 OK - item exists."
-                return $true
-            } # try {
-            catch {
-                $caughtException = $_.Exception
+            $params['SkipCertificateCheck'] = $true
+        }
 
-                # Certificate / TLS failure
-                if (
-                    $caughtException -is [System.Net.Http.HttpRequestException] -and
-                    (
-                        $caughtException.Message -match 'certificate' -or
-                        $caughtException.Message -match 'SSL' -or
-                        $caughtException.Message -match 'TLS'
-                    )
-                ) {
-                    Write-Error -Category SecurityError -Message (
-                        "Certificate validation failed while accessing '$WebDavUrl'. " +
-                        "The existence of the item could not be determined."
-                    )
-                    return $false
-                }
+        try {
+            Invoke-RestMethod @params | Out-Null
+            Write-Verbose "HTTP 200 OK - item exists."
+            return $true
+        }
+        catch {
+            $caughtException = $_.Exception
 
-                # HTTP response present - real existence check
-                if ($caughtException.Response) {
-                    $statusCode = [int]$caughtException.Response.StatusCode
-                    $statusDescription = $caughtException.Response.StatusDescription
-
-                    Write-Verbose "HTTP $statusCode $statusDescription - item does NOT exist."
-                    return $false
-                }
-
-                # Unknown failure
-                Write-Error -Message "Unexpected error testing '$WebDavUrl': $($caughtException.Message)"
+            # Certificate / TLS failure
+            if (
+                $caughtException -is [System.Net.Http.HttpRequestException] -and
+                (
+                    $caughtException.Message -match 'certificate' -or
+                    $caughtException.Message -match 'SSL' -or
+                    $caughtException.Message -match 'TLS'
+                )
+            ) {
+                Write-Error -Category SecurityError -Message (
+                    "Certificate validation failed while accessing '$WebDavUrl'. " +
+                    "The existence of the item could not be determined."
+                )
                 return $false
             }
 
-        } # if ($SkipCertificateCheck) {
-        else {
-            try {
-                Invoke-WebRequest `
-                    -Uri $WebDavUrl `
-                    -Method Head `
-                    -Authentication Basic `
-                    -Credential $CloudCredential `
-                    -ErrorAction Stop | Out-Null
-            
-                Write-Verbose "HTTP 200 OK - item exists."
-                return $true
-            } # try {
-            catch {
-                $caughtException = $_.Exception
+            # HTTP response present - real existence check
+            if ($caughtException.Response) {
+                $statusCode = [int]$caughtException.Response.StatusCode
+                $statusDescription = $caughtException.Response.StatusDescription
 
-                # Certificate / TLS failure
-                if (
-                    $caughtException -is [System.Net.Http.HttpRequestException] -and
-                    (
-                        $caughtException.Message -match 'certificate' -or
-                        $caughtException.Message -match 'SSL' -or
-                        $caughtException.Message -match 'TLS'
-                    )
-                ) {
-                    Write-Error -Category SecurityError -Message (
-                        "Certificate validation failed while accessing '$WebDavUrl'. " +
-                        "The existence of the item could not be determined."
-                    )
-                    return $false
-                }
-
-                # HTTP response present - real existence check
-                if ($caughtException.Response) {
-                    $statusCode = [int]$caughtException.Response.StatusCode
-                    $statusDescription = $caughtException.Response.StatusDescription
-
-                    Write-Verbose "HTTP $statusCode $statusDescription - item does NOT exist."
-                    return $false
-                }
-
-                # Unknown failure
-                Write-Error -Message "Unexpected error testing '$WebDavUrl': $($caughtException.Message)"
+                Write-Verbose "HTTP $statusCode $statusDescription - item does NOT exist."
                 return $false
             }
 
-        } # catch
-
+            # Unknown failure
+            Write-Error -Message "Unexpected error testing '$WebDavUrl': $($caughtException.Message)"
+            return $false
+        }
     }
     end {
         
